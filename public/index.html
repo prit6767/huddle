@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Huddle — stop debating, start booking</title>
+    <title>Huddle — the AI you add to your group chat</title>
     <!--OG--><meta property="og:title" content="Huddle" />
     <meta
       property="og:description"
-      content="Group plans, decided. Everyone drops their constraints in one message; Huddle returns three bookable options."
+      content="Add it to your group chat. It settles arguments with real sources, and turns 'where should we go?' into three bookable plans."
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary" />
@@ -15,81 +15,225 @@
     <link rel="stylesheet" href="/styles.css" />
     <link
       rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>"
     />
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="/">
-        <span class="brand-mark">◍</span>
+        <span class="brand-mark" aria-hidden="true">◍</span>
         <span>Huddle</span>
       </a>
-      <span class="engine" id="engine-badge"></span>
+      <nav class="topnav">
+        <a href="#add">Add it</a>
+        <a href="#planner">Planner</a>
+        <a
+          href="https://github.com/prit6767/huddle"
+          target="_blank"
+          rel="noopener noreferrer"
+          >GitHub</a
+        >
+        <span class="engine" id="engine-badge" title="Planning engine in use"></span>
+      </nav>
     </header>
 
     <main id="app">
-      <!-- ============ CREATE ============ -->
+      <!-- ============================ LANDING ============================ -->
       <section id="view-create" class="view">
         <div class="hero">
-          <h1>Three plans. No group chat spiral.</h1>
-          <p class="lede">
-            Everyone tells the assistant their constraints in one message. It works out the
-            overlap and hands the group three finalized options with booking links.
-          </p>
+          <div class="hero-copy">
+            <p class="eyebrow">Add it like any other contact</p>
+            <h1>The AI that <em>lives</em> in your group chat.</h1>
+            <p class="lede">
+              It sits quietly in the conversation. When you talk to it, it answers — searching
+              the web for anything current, so it's actually useful for settling arguments.
+            </p>
+            <div class="cta-row">
+              <a class="btn primary lg" href="#add">Add it to a chat</a>
+              <a class="btn ghost lg" href="#planner">Try the planner</a>
+            </div>
+            <p class="fineprint">Free &amp; open source · Telegram, Discord, iMessage</p>
+          </div>
+
+          <!-- Chat demo: the argument it was built to end -->
+          <div class="phone" aria-label="Example group chat conversation">
+            <div class="phone-bar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="phone-title">The Lads</span>
+            </div>
+            <div class="phone-body">
+              <div class="msg them">
+                <span class="who">Dev</span>ronaldo is clearly the goat
+              </div>
+              <div class="msg them">
+                <span class="who">Sam</span>are you serious 😭 &nbsp;messi has more ballon d'ors
+              </div>
+              <div class="msg them">
+                <span class="who">Dev</span>ronaldo has more international goals tho
+              </div>
+              <div class="msg me">huddle, who actually has more career goals?</div>
+              <div class="msg bot">
+                <span class="who bot-who"><span class="brand-mark">◍</span> Huddle</span>
+                Ronaldo leads on career goals; Messi leads on Ballon d'Ors and assists.
+                "Better" is preference — the numbers aren't.
+                <span class="srcs">espn.com · fifa.com</span>
+              </div>
+              <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+            </div>
+          </div>
         </div>
 
-        <form id="create-form" class="card form">
-          <div class="field">
-            <label for="f-title">What's the occasion?</label>
-            <input id="f-title" name="title" placeholder="Maya's birthday dinner" required maxlength="120" />
+        <!-- ---------------------------- what it does --------------------- -->
+        <section class="band">
+          <h2 class="band-title">What it actually does</h2>
+          <div class="feature-grid">
+            <article class="feature">
+              <div class="feature-icon">🔎</div>
+              <h3>Settles arguments</h3>
+              <p>
+                Searches the web for stats, scores, prices and news, then answers in a sentence
+                or two with sources. It's been reading the chat, so you don't have to re-explain
+                what you were arguing about.
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">📍</div>
+              <h3>Plans the outing</h3>
+              <p>
+                Say <code>/plan dinner in Austin</code> and everyone just talks. It pulls out
+                who's free, budgets, dietary needs and accessibility — then returns three
+                finalized options with booking links.
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">🤫</div>
+              <h3>Knows when to shut up</h3>
+              <p>
+                It never replies unless spoken to. Ambient banter is read for context and
+                answered with silence — because a bot that comments on every message is the
+                thing this exists to eliminate.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- ---------------------------- add it --------------------------- -->
+        <section class="band" id="add">
+          <h2 class="band-title">Add it to your chat</h2>
+          <p class="band-sub">
+            Three ways to get its attention once it's in:
+            <b>@mention it</b>, <b>reply to it</b>, or just start with <b>"huddle,"</b>.
+          </p>
+
+          <div class="platform-grid">
+            <article class="platform">
+              <header><span class="plat-icon tg">✈️</span><h3>Telegram</h3></header>
+              <ol>
+                <li>Message <b>@BotFather</b> → <code>/newbot</code></li>
+                <li><b>/setprivacy</b> → your bot → <b>Disable</b></li>
+                <li>Add the bot to your group</li>
+              </ol>
+              <p class="warn-note">
+                Step 2 isn't optional — without it Telegram hides normal messages from bots.
+              </p>
+            </article>
+
+            <article class="platform">
+              <header><span class="plat-icon dc">🎮</span><h3>Discord</h3></header>
+              <ol>
+                <li>Developer Portal → New Application → Bot</li>
+                <li>Enable <b>Message Content Intent</b></li>
+                <li>OAuth2 → invite it to your server</li>
+              </ol>
+              <p class="warn-note">Same trap as Telegram — the intent is required.</p>
+            </article>
+
+            <article class="platform">
+              <header><span class="plat-icon im">💬</span><h3>iMessage</h3></header>
+              <ol>
+                <li>Grant your terminal <b>Full Disk Access</b></li>
+                <li>Run <code>ENABLE_IMESSAGE=1 npm run bots</code></li>
+                <li>It replies in your existing threads</li>
+              </ol>
+              <p class="warn-note">
+                Apple has no bot API — this relays through your own Mac, so messages send from
+                your number.
+              </p>
+            </article>
           </div>
 
-          <div class="row">
-            <div class="field">
-              <label for="f-city">City</label>
-              <input id="f-city" name="city" placeholder="Portland, OR" required maxlength="80" />
-            </div>
-            <div class="field">
-              <label for="f-size">Roughly how many?</label>
-              <input id="f-size" name="partySize" type="number" min="2" max="30" value="5" />
-            </div>
-          </div>
+          <p class="band-foot">
+            WhatsApp has no group-bot API at all, so there's no honest way to do it. Paste an
+            invite link there instead — it works everywhere.
+          </p>
+        </section>
 
-          <div class="row">
-            <div class="field">
-              <label for="f-group">Who's coming?</label>
-              <select id="f-group" name="groupType">
-                <option value="friends">Friends</option>
-                <option value="family">Family</option>
-                <option value="teens">Teens</option>
-                <option value="coworkers">Coworkers</option>
-                <option value="seniors">Seniors</option>
-                <option value="mixed" selected>A mix</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="f-name">Your name</label>
-              <input id="f-name" name="organizerName" placeholder="Sam" maxlength="40" />
-            </div>
-          </div>
+        <!-- ---------------------------- planner -------------------------- -->
+        <section class="band" id="planner">
+          <h2 class="band-title">Or plan something right here</h2>
+          <p class="band-sub">
+            No chat app needed. Start a plan, share the link, everyone drops their constraints.
+          </p>
 
-          <div class="row">
+          <form id="create-form" class="card form">
             <div class="field">
-              <label for="f-start">Earliest date</label>
-              <input id="f-start" name="windowStart" type="date" />
+              <label for="f-title">What's the occasion?</label>
+              <input
+                id="f-title"
+                name="title"
+                placeholder="Maya's birthday dinner"
+                required
+                maxlength="120"
+              />
             </div>
-            <div class="field">
-              <label for="f-end">Latest date</label>
-              <input id="f-end" name="windowEnd" type="date" />
-            </div>
-          </div>
 
-          <button class="btn primary" type="submit">Create the huddle</button>
-          <p class="error" id="create-error" hidden></p>
-        </form>
+            <div class="row">
+              <div class="field">
+                <label for="f-city">City</label>
+                <input id="f-city" name="city" placeholder="Portland, OR" required maxlength="80" />
+              </div>
+              <div class="field">
+                <label for="f-size">Roughly how many?</label>
+                <input id="f-size" name="partySize" type="number" min="2" max="30" value="5" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="f-group">Who's coming?</label>
+                <select id="f-group" name="groupType">
+                  <option value="friends">Friends</option>
+                  <option value="family">Family</option>
+                  <option value="teens">Teens</option>
+                  <option value="coworkers">Coworkers</option>
+                  <option value="seniors">Seniors</option>
+                  <option value="mixed" selected>A mix</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="f-name">Your name</label>
+                <input id="f-name" name="organizerName" placeholder="Sam" maxlength="40" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="f-start">Earliest date</label>
+                <input id="f-start" name="windowStart" type="date" />
+              </div>
+              <div class="field">
+                <label for="f-end">Latest date</label>
+                <input id="f-end" name="windowEnd" type="date" />
+              </div>
+            </div>
+
+            <button class="btn primary lg wide" type="submit">Create the huddle →</button>
+            <p class="error" id="create-error" hidden></p>
+          </form>
+        </section>
       </section>
 
-      <!-- ============ HUDDLE ============ -->
+      <!-- ============================ HUDDLE ============================= -->
       <section id="view-huddle" class="view" hidden>
         <div class="huddle-head">
           <div>
@@ -101,7 +245,6 @@
 
         <div class="layout">
           <div class="col-main">
-            <!-- join gate -->
             <div class="card" id="join-card">
               <h2>Jump in</h2>
               <p class="muted">
@@ -115,7 +258,6 @@
               <p class="error" id="join-error" hidden></p>
             </div>
 
-            <!-- chat -->
             <div class="card chat" id="chat-card" hidden>
               <div class="chat-log" id="chat-log"></div>
               <form id="chat-form" class="inline-form">
@@ -142,12 +284,11 @@
               <div id="consensus-body" class="muted">Waiting on the first answer.</div>
             </div>
 
-            <button class="btn primary wide" id="finalize">Get 3 plans</button>
+            <button class="btn primary wide lg" id="finalize">Get 3 plans</button>
             <p class="error" id="finalize-error" hidden></p>
           </aside>
         </div>
 
-        <!-- results -->
         <section id="results" hidden>
           <div class="results-head">
             <h2>Three ways this works</h2>
@@ -159,10 +300,19 @@
     </main>
 
     <footer class="footer">
-      <p>
-        Venue catalog is illustrative sample data. Booking links are live city-scoped searches —
-        confirm hours and availability before you commit.
-      </p>
+      <div class="footer-inner">
+        <p>
+          <b>Huddle</b> — open source on
+          <a href="https://github.com/prit6767/huddle" target="_blank" rel="noopener noreferrer"
+            >GitHub</a
+          >.
+        </p>
+        <p class="disclaimer">
+          Venue catalog is illustrative sample data — not real businesses. Booking links are live
+          city-scoped searches. Accessibility and dietary details come from listings, not checks we
+          ran; confirm with the venue before you commit.
+        </p>
+      </div>
     </footer>
 
     <script src="/app.js" type="module"></script>
