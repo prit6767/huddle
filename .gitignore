@@ -3,3 +3,8 @@ data/huddles.json
 data/huddles.json.*.tmp
 .env
 .DS_Store
+
+# local tunnel + logs
+cloudflared
+tunnel.log
+app.log

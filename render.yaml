@@ -1,0 +1,28 @@
+# Render blueprint — one-click deploy for the web app.
+#
+# Why a host and not GitHub Pages: this is a Node server, not a static site.
+# The frontend calls /api/* routes served by src/server.mjs, and group state
+# has to be shared between everyone in a huddle. Static hosting can do neither.
+#
+# Deploy:
+#   1. render.com -> New -> Blueprint -> connect this repo
+#   2. Add ANTHROPIC_API_KEY in the dashboard (never commit it)
+#
+# Note: the free plan sleeps after ~15 min idle (first hit takes ~30s to wake)
+# and has an ephemeral filesystem, so data/huddles.json is wiped on restart.
+# Fine for a demo; move storage to Postgres before real use.
+services:
+  - type: web
+    name: huddle
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      # Set this in the Render dashboard, not here. sync:false keeps it
+      # out of the repo and prompts you for it at deploy time.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: "22"

@@ -54,6 +54,38 @@ Without a key the bot says so plainly when asked something rather than guessing.
 
 ---
 
+## Deploying
+
+**This will not work on GitHub Pages.** It's a Node server, not a static site: the
+frontend calls `/api/*` routes from `src/server.mjs`, and a huddle's state has to be
+shared between everyone in it. Static hosting can do neither, and a client-side
+rewrite would also expose your API key to every visitor.
+
+Any host that runs Node works. A Render blueprint is included:
+
+1. [render.com](https://render.com) → New → Blueprint → connect this repo
+2. Add `ANTHROPIC_API_KEY` in the dashboard (never commit it)
+
+Then point share links at it so the bots post reachable URLs:
+
+```bash
+HUDDLE_PUBLIC_URL=https://your-app.onrender.com
+```
+
+Free-tier caveats: the service sleeps after ~15 min idle (first request takes ~30s
+to wake), and the filesystem is ephemeral — `data/huddles.json` is wiped on every
+restart and redeploy, so plans vanish. Fine for a demo; move storage to Postgres
+before anyone relies on it.
+
+For a quick temporary link without deploying, tunnel your local server:
+
+```bash
+npm start                                              # terminal 1
+./cloudflared tunnel --url http://localhost:3000       # terminal 2
+```
+
+---
+
 ## Adding it to a group chat
 
 ```bash
