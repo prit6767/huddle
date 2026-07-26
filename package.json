@@ -1,0 +1,20 @@
+{
+  "name": "huddle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Group-chat companion that collects everyone's constraints and outputs 3 finalized, bookable plans.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "bots": "node src/bots/run.mjs",
+    "all": "node src/server.mjs & node src/bots/run.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "discord.js": "^14.27.0"
+  }
+}

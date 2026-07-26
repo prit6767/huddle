@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Huddle — stop debating, start booking</title>
+    <!--OG--><meta property="og:title" content="Huddle" />
+    <meta
+      property="og:description"
+      content="Group plans, decided. Everyone drops their constraints in one message; Huddle returns three bookable options."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <!--/OG-->
+    <link rel="stylesheet" href="/styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">◍</span>
+        <span>Huddle</span>
+      </a>
+      <span class="engine" id="engine-badge"></span>
+    </header>
+
+    <main id="app">
+      <!-- ============ CREATE ============ -->
+      <section id="view-create" class="view">
+        <div class="hero">
+          <h1>Three plans. No group chat spiral.</h1>
+          <p class="lede">
+            Everyone tells the assistant their constraints in one message. It works out the
+            overlap and hands the group three finalized options with booking links.
+          </p>
+        </div>
+
+        <form id="create-form" class="card form">
+          <div class="field">
+            <label for="f-title">What's the occasion?</label>
+            <input id="f-title" name="title" placeholder="Maya's birthday dinner" required maxlength="120" />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="f-city">City</label>
+              <input id="f-city" name="city" placeholder="Portland, OR" required maxlength="80" />
+            </div>
+            <div class="field">
+              <label for="f-size">Roughly how many?</label>
+              <input id="f-size" name="partySize" type="number" min="2" max="30" value="5" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="f-group">Who's coming?</label>
+              <select id="f-group" name="groupType">
+                <option value="friends">Friends</option>
+                <option value="family">Family</option>
+                <option value="teens">Teens</option>
+                <option value="coworkers">Coworkers</option>
+                <option value="seniors">Seniors</option>
+                <option value="mixed" selected>A mix</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-name">Your name</label>
+              <input id="f-name" name="organizerName" placeholder="Sam" maxlength="40" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="f-start">Earliest date</label>
+              <input id="f-start" name="windowStart" type="date" />
+            </div>
+            <div class="field">
+              <label for="f-end">Latest date</label>
+              <input id="f-end" name="windowEnd" type="date" />
+            </div>
+          </div>
+
+          <button class="btn primary" type="submit">Create the huddle</button>
+          <p class="error" id="create-error" hidden></p>
+        </form>
+      </section>
+
+      <!-- ============ HUDDLE ============ -->
+      <section id="view-huddle" class="view" hidden>
+        <div class="huddle-head">
+          <div>
+            <h1 id="h-title"></h1>
+            <p class="meta" id="h-meta"></p>
+          </div>
+          <button class="btn ghost" id="copy-link">Copy invite link</button>
+        </div>
+
+        <div class="layout">
+          <div class="col-main">
+            <!-- join gate -->
+            <div class="card" id="join-card">
+              <h2>Jump in</h2>
+              <p class="muted">
+                One message is usually enough. Say when you're free, what you'd spend, and
+                anything the group has to work around.
+              </p>
+              <form id="join-form" class="inline-form">
+                <input id="join-name" placeholder="Your name" required maxlength="40" />
+                <button class="btn primary" type="submit">Start</button>
+              </form>
+              <p class="error" id="join-error" hidden></p>
+            </div>
+
+            <!-- chat -->
+            <div class="card chat" id="chat-card" hidden>
+              <div class="chat-log" id="chat-log"></div>
+              <form id="chat-form" class="inline-form">
+                <input
+                  id="chat-input"
+                  placeholder="Free Sat after 5, ~$25, and my sister's vegetarian"
+                  autocomplete="off"
+                  maxlength="2000"
+                />
+                <button class="btn primary" id="chat-send" type="submit">Send</button>
+              </form>
+              <div class="chip-row" id="quick-chips"></div>
+            </div>
+          </div>
+
+          <aside class="col-side">
+            <div class="card">
+              <h3>Who's in</h3>
+              <ul class="roster" id="roster"></ul>
+            </div>
+
+            <div class="card" id="consensus-card">
+              <h3>What the group needs</h3>
+              <div id="consensus-body" class="muted">Waiting on the first answer.</div>
+            </div>
+
+            <button class="btn primary wide" id="finalize">Get 3 plans</button>
+            <p class="error" id="finalize-error" hidden></p>
+          </aside>
+        </div>
+
+        <!-- results -->
+        <section id="results" hidden>
+          <div class="results-head">
+            <h2>Three ways this works</h2>
+            <p class="muted" id="tradeoff"></p>
+          </div>
+          <div class="options" id="options"></div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        Venue catalog is illustrative sample data. Booking links are live city-scoped searches —
+        confirm hours and availability before you commit.
+      </p>
+    </footer>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

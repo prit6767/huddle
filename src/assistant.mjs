@@ -1,0 +1,170 @@
+// General-purpose group chat assistant.
+//
+// The planner answers one question well. This answers everything else — and
+// the common case is settling an argument, which means it needs facts that are
+// newer than any model's training data. So it runs Claude's server-side web
+// search: Anthropic executes the searches, we just read the results.
+import Anthropic from '@anthropic-ai/sdk';
+import { getClient, llmAvailable, MODEL, traitsFor } from './llm.mjs';
+import { claim, refund, cacheKey, cacheGet, cacheSet, recordUsage, recordCacheHit } from './budget.mjs';
+
+const EFFORT = process.env.HUDDLE_ASK_EFFORT || 'medium';
+// Each search is billed on top of tokens, so this is the sharpest cost lever
+// after model choice. Three is enough to settle most factual arguments.
+const MAX_SEARCHES = Number(process.env.HUDDLE_MAX_SEARCHES || 3);
+
+// Start from whatever this model actually supports, then step down if the
+// deployed API disagrees. Picking by model means the common case costs no 400.
+const SEARCH_VERSIONS = [traitsFor().searchTool, 'web_search_20250305', null].filter(
+  (v, i, a) => a.indexOf(v) === i
+);
+let searchVersion = SEARCH_VERSIONS[0];
+
+const SYSTEM = `You are a helpful assistant that lives inside a group chat. Several people are talking to each other; you are one participant among them, not a search engine and not a customer service bot.
+
+How to behave here:
+
+- Be SHORT. This is a chat message, not an essay. Two or three sentences is usually right. Never use headers. Use a compact list only when comparing specific numbers, and keep it to a few lines.
+- Answer the question that was actually asked. If the group is arguing, give them what settles it.
+- Separate fact from opinion, briefly. If a question has an objective part and a subjective part — "who has more goals" vs "who is better" — give the numbers plainly, then say in a clause that the rest is preference. Do not lecture them about it, and do not refuse to have a view if asked directly.
+- Search the web whenever the answer depends on anything current: statistics, prices, scores, standings, recent events, who currently holds a position, what a thing costs today. Your training data is stale for all of it. Do not answer sports or news questions from memory.
+- Cite numbers with enough specificity to be checkable — "as of the 2025-26 season" beats "currently".
+- If the chat history makes the question ambiguous, use the history to resolve it rather than asking a clarifying question. People in a group chat will not answer your follow-up.
+- If you genuinely do not know and cannot find out, say so in one line.
+- No preamble. Do not open with "Great question" or restate what was asked. Lead with the answer.
+- Match the register of the room. These are friends talking, not a business meeting.`;
+
+function buildRequest(question, context, version) {
+  const userContent = context
+    ? `Recent messages in this group chat:\n\n${context}\n\n---\n\nSomeone is now asking you directly:\n${question}`
+    : question;
+
+  return {
+    model: MODEL,
+    max_tokens: 1200, // a chat reply; the prompt already demands brevity
+    system: SYSTEM,
+    // Haiku-tier models reject output_config.effort outright.
+    ...(traitsFor().supportsEffort ? { output_config: { effort: EFFORT } } : {}),
+    messages: [{ role: 'user', content: userContent }],
+    ...(version
+      ? { tools: [{ type: version, name: 'web_search', max_uses: MAX_SEARCHES }] }
+      : {}),
+  };
+}
+
+/** Pull the answer text and any sources out of a response with server-tool blocks. */
+function readResponse(response) {
+  const text = response.content
+    .filter((b) => b.type === 'text')
+    .map((b) => b.text)
+    .join('')
+    .trim();
+
+  const sources = [];
+  for (const block of response.content) {
+    if (block.type !== 'web_search_tool_result') continue;
+    // On an error, `content` is a single error object rather than a list.
+    if (!Array.isArray(block.content)) continue;
+    for (const result of block.content) {
+      if (result.url && !sources.some((s) => s.url === result.url)) {
+        sources.push({ url: result.url, title: result.title || result.url });
+      }
+    }
+  }
+  return { text, sources };
+}
+
+/**
+ * Answer a question addressed to the bot.
+ * Returns { text, sources } — or an explanatory message if unavailable.
+ */
+export async function ask({ question, context, platform = 'unknown', chatId = 'unknown' }) {
+  // Cache first — a re-ask or a double-tap shouldn't cost anything.
+  const key = cacheKey(platform, chatId, question);
+  const cached = cacheGet(key);
+  if (cached) {
+    recordCacheHit();
+    return cached;
+  }
+
+  if (!llmAvailable()) {
+    return {
+      text:
+        "I can't answer general questions without an API key — only the /plan features work right now. " +
+        'Set ANTHROPIC_API_KEY and restart the bots.',
+      sources: [],
+    };
+  }
+
+  const anthropic = getClient();
+  if (!anthropic) return { text: 'My connection to Claude is not configured.', sources: [] };
+
+  // Claim budget only once we know we're actually going to spend.
+  const allowance = claim(platform, chatId);
+  if (!allowance.allowed) return { text: allowance.reason, sources: [] };
+
+  for (let i = SEARCH_VERSIONS.indexOf(searchVersion); i < SEARCH_VERSIONS.length; i++) {
+    const version = SEARCH_VERSIONS[i];
+    try {
+      let response = await anthropic.messages.create(buildRequest(question, context, version));
+
+      // A long search turn can stop early with pause_turn; resume it.
+      let messages = [{ role: 'user', content: buildRequest(question, context, version).messages[0].content }];
+      let guard = 0;
+      while (response.stop_reason === 'pause_turn' && guard++ < 4) {
+        messages = [...messages, { role: 'assistant', content: response.content }];
+        response = await anthropic.messages.create({
+          ...buildRequest(question, context, version),
+          messages,
+        });
+      }
+
+      if (version !== searchVersion) {
+        console.warn(`[assistant] web search: ${searchVersion} -> ${version}`);
+        searchVersion = version;
+      }
+
+      if (response.stop_reason === 'refusal') {
+        refund(platform, chatId);
+        return { text: "I can't help with that one.", sources: [] };
+      }
+
+      const { text, sources } = readResponse(response);
+      recordUsage({ model: MODEL, usage: response.usage, searches: sources.length ? 1 : 0 });
+
+      if (!text) {
+        refund(platform, chatId);
+        return { text: 'I came up empty on that — try rephrasing?', sources: [] };
+      }
+
+      const answer = { text, sources };
+      cacheSet(key, answer);
+      return answer;
+    } catch (err) {
+      // A 400 here usually means this API vintage doesn't know that tool
+      // version. Step down; the last entry drops search entirely.
+      if (err instanceof Anthropic.BadRequestError && i < SEARCH_VERSIONS.length - 1) {
+        console.warn(`[assistant] "${version}" rejected (${err.message}) — trying next`);
+        continue;
+      }
+      refund(platform, chatId);
+      if (err instanceof Anthropic.RateLimitError) {
+        return { text: "I'm being rate limited — give it a minute.", sources: [] };
+      }
+      if (err instanceof Anthropic.APIError) {
+        console.warn(`[assistant] API error ${err.status}: ${err.message}`);
+        return { text: `Something went wrong reaching Claude (${err.status}).`, sources: [] };
+      }
+      console.error('[assistant] failed:', err.message);
+      return { text: 'Something went wrong on my end.', sources: [] };
+    }
+  }
+  return { text: 'Something went wrong on my end.', sources: [] };
+}
+
+/** Format for posting into a chat: answer plus a trimmed source list. */
+export function formatAnswer({ text, sources }) {
+  if (!sources.length) return text;
+  const top = sources.slice(0, 3).map((s) => `· ${s.url}`);
+  return `${text}\n\n${top.join('\n')}`;
+}
