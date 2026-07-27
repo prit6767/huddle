@@ -244,6 +244,49 @@ No privacy-mode trap here — `channels:history` is what lets it read the
 conversation, and Slack makes you declare it up front. If a token is wrong the
 launcher says which one and disables only that adapter.
 
+#### Distributing it to other workspaces
+
+Socket Mode above is right for one workspace you control. It **cannot be
+distributed** — App Directory apps must receive events over HTTPS, because
+Slack has no socket to push a stranger's workspace events down. So distribution
+needs a public origin and three more routes, which the web server already
+serves:
+
+| Route | Purpose |
+|---|---|
+| `GET /slack/install` | Redirects to Slack's consent screen |
+| `GET /slack/oauth/callback` | Exchanges the code, stores that workspace's bot token |
+| `POST /slack/events` | Receives events for every installed workspace |
+
+Add to your Slack app: the redirect URL, the events request URL, and copy the
+signing secret. Then set:
+
+```bash
+SLACK_CLIENT_ID=...
+SLACK_CLIENT_SECRET=...
+SLACK_SIGNING_SECRET=...
+```
+
+The landing page then shows an **Add to Slack** button, and any workspace can
+install your instance without touching a terminal.
+
+Three things this gets right, because getting them wrong is the whole risk:
+
+- **Every request is verified.** HMAC over the raw body with a constant-time
+  compare, plus a five-minute timestamp window so a captured request can't be
+  replayed. Nine tests cover it directly — an endpoint this public should not
+  be trusted because it looks correct.
+- **Workspaces are isolated.** Chat ids are scoped `teamId:channelId`, so two
+  companies that both have a `#general` never share a huddle, an answer cache
+  entry, or a daily spend cap.
+- **Slack is acknowledged before the work starts.** Slack demands a 200 within
+  three seconds and retries otherwise; a web search takes longer, and a retry
+  would answer — and bill — the same question twice. Events are also
+  deduplicated by id.
+
+Tokens live in `data/installs.sqlite`, deliberately separate from the huddle
+store, because that store is what `publicView()` serialises to browsers.
+
 **Why this suits companies:** it self-hosts, so no conversation data leaves
 your infrastructure; the per-chat and global daily caps bound what any one
 channel can spend; and nothing it outputs invents a rating or an accessibility

@@ -533,6 +533,7 @@ function renderInvites(invites) {
   const block = $('#quickadd');
   if (!block) return;
   const links = [
+    { key: 'slack', label: 'Add to Slack', icon: '💼' },
     { key: 'telegram', label: 'Add to Telegram', icon: '✈️' },
     { key: 'discord', label: 'Add to Discord', icon: '🎮' },
   ].filter((l) => invites?.[l.key]);

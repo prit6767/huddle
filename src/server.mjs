@@ -11,6 +11,7 @@ import { shareLine } from './links.mjs';
 import { llmAvailable, MODEL } from './llm.mjs';
 import { todayStr, addDays, datesInWindow } from './timeutil.mjs';
 import { GROUP_TYPES } from './vocab.mjs';
+import { slackRoutes, slackDistributionConfigured, installUrl } from './slack-http.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(here, '..', 'public');
@@ -204,6 +205,9 @@ const routes = [
         invites: {
           telegram: process.env.HUDDLE_TELEGRAM_INVITE || null,
           discord: process.env.HUDDLE_DISCORD_INVITE || null,
+          // Self-hosted OAuth: no directory listing needed for a workspace to
+          // install this instance.
+          slack: installUrl(PUBLIC_URL) || process.env.HUDDLE_SLACK_INVITE || null,
         },
       });
     },
@@ -409,8 +413,27 @@ const routes = [
   },
 ];
 
+const SLACK_ROUTES = slackRoutes(PUBLIC_URL);
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+
+  // Slack's OAuth and Events endpoints live outside /api/ because Slack owns
+  // those URLs — they're configured in the app manifest, not by us.
+  if (url.pathname.startsWith('/slack/')) {
+    for (const route of SLACK_ROUTES) {
+      if (!url.pathname.match(route.match)) continue;
+      if (req.method !== route.method) return fail(res, 405, 'Method not allowed');
+      try {
+        return await route.handler(req, res, [], url);
+      } catch (err) {
+        console.error(`[server] ${req.method} ${url.pathname} failed:`, err.message);
+        if (!res.headersSent) return fail(res, 500, 'Something broke on our side.');
+        return;
+      }
+    }
+    return fail(res, 404, 'Not found');
+  }
 
   if (!url.pathname.startsWith('/api/')) {
     if (req.method !== 'GET') return fail(res, 405, 'Method not allowed');
@@ -435,6 +458,11 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`\n  Huddle running at http://localhost:${PORT}`);
   console.log(
-    `  Planning engine: ${llmAvailable() ? MODEL : 'heuristic fallback (set ANTHROPIC_API_KEY for the real thing)'}\n`
+    `  Planning engine: ${llmAvailable() ? MODEL : 'heuristic fallback (set ANTHROPIC_API_KEY for the real thing)'}`
   );
+  if (slackDistributionConfigured()) {
+    console.log(`  Slack install:   ${PUBLIC_URL}/slack/install`);
+    console.log(`  Slack events:    ${PUBLIC_URL}/slack/events`);
+  }
+  console.log('');
 });
