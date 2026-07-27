@@ -1,0 +1,52 @@
+{
+  // Cloudflare Workers deployment for Huddle's web app + Slack/Telegram webhooks.
+  //
+  // What runs here: the site, the huddle API, Slack OAuth + events, and the
+  // Telegram webhook — everything that is request-scoped. What does NOT: the
+  // Discord gateway and the iMessage relay, which need a long-lived process and
+  // stay in the Node build (npm run bots).
+  //
+  // Deploy:
+  //   wrangler d1 create huddle
+  //   # paste the returned database_id below
+  //   wrangler d1 execute huddle --file workers/schema.sql --remote
+  //   wrangler secret put ANTHROPIC_API_KEY
+  //   wrangler secret put SLACK_CLIENT_SECRET
+  //   wrangler secret put SLACK_SIGNING_SECRET
+  //   wrangler deploy
+  "name": "huddle",
+  "main": "index.mjs",
+  "compatibility_date": "2024-09-23",
+  // node:crypto, node:path etc. used by the shared pure modules.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The single-page site and assets. Served directly by the runtime; the Worker
+  // only runs for routes the assets don't cover.
+  "assets": {
+    "directory": "../public",
+    "binding": "ASSETS"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "huddle",
+      "database_id": "PASTE_DATABASE_ID_AFTER_wrangler_d1_create"
+    }
+  ],
+
+  "vars": {
+    "HUDDLE_PUBLIC_URL": "https://huddle-hq.com"
+    // Non-secret invite links can go here too, e.g.
+    // "HUDDLE_TELEGRAM_INVITE": "https://t.me/YourBot?startgroup=true"
+  },
+
+  // Secrets are set with `wrangler secret put`, never committed:
+  //   ANTHROPIC_API_KEY, SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, SLACK_SIGNING_SECRET
+  "observability": { "enabled": true },
+
+  "routes": [
+    { "pattern": "huddle-hq.com/*", "zone_name": "huddle-hq.com" },
+    { "pattern": "www.huddle-hq.com/*", "zone_name": "huddle-hq.com" }
+  ]
+}
