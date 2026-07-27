@@ -12,7 +12,8 @@
     "dev": "node --watch src/server.mjs",
     "bots": "node src/bots/run.mjs",
     "all": "node src/server.mjs & node src/bots/run.mjs",
-    "doctor": "node src/bots/doctor.mjs"
+    "doctor": "node src/bots/doctor.mjs",
+    "test": "node --test 'test/*.test.mjs'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.0",

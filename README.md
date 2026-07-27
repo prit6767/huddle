@@ -328,6 +328,29 @@ anything merely listed reads dashed and muted, so you can tell "we did the arith
 catalog says so" without reading a word. Accessibility and dietary claims are locked to the listed
 form permanently.
 
+## Tests
+
+```bash
+npm test          # node:test, no dependencies, ~0.3s
+```
+
+42 tests over the deterministic core — the part that must stay correct when the
+model is unavailable, rate limited, or wrong. They exist because the product's
+central claim is that *the arithmetic is ours and it is correct*, and a claim
+like that should be executable.
+
+The ones worth knowing about:
+
+| What it protects | Why it matters |
+|---|---|
+| Budget ceiling is the **minimum** of everyone's maximum | The person who can't afford $60 never has to say so twice |
+| Time is the **overlap**, and one outlier can't zero out a day | The failure mode is a plan that quietly excludes somebody |
+| Hard constraints filter **before** the model is consulted | A hallucinated wheelchair ramp is impossible, not unlikely |
+| Accessibility and dietary claims are **never** `computed` | A green tick on an unverified ramp puts a real person outside a door |
+| Options carry no rating/review/star field | Invented social proof is the easiest way to make this dishonest |
+| A huddle survives a **real process restart** | Tested by re-opening the database in a fresh process, not a cached module |
+| Per-chat caps, and cached answers scoped per chat | One group can't spend another's allowance or read its answers |
+
 ## Design decisions worth knowing
 
 **The model never overrides a hard constraint.** Filtering happens in plain JavaScript before Claude sees anything. An LLM that hallucinates a wheelchair ramp is a safety problem, not a UX problem.

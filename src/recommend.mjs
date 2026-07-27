@@ -352,7 +352,12 @@ export async function recommend({ huddle, consensus }) {
     return {
       options: [],
       tradeoff: '',
-      blocked: 'No overlapping time window yet — at least two people need to share a slot.',
+      // Say what is actually true. Slots exist as soon as one person names a
+      // window of an hour or more — the recommender does not require an
+      // overlap, it just states who can't make each option. So the only way to
+      // land here is that nobody has given a usable window yet.
+      blocked:
+        'Nobody has said when they\'re free yet — or the windows given are under an hour. Say a day and a rough time and I\'ll take it from there.',
       shortfall: null,
     };
   }
