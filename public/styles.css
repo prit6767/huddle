@@ -88,6 +88,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* The topbar is sticky, so anchor jumps must clear it or the heading
+     they targeted lands underneath it. */
+  scroll-padding-top: 84px;
 }
 
 body {
@@ -772,6 +775,86 @@ select:focus {
 }
 .platform ol b {
   color: var(--ink);
+}
+
+/* ==================================================== numbered setup steps
+   Setup is the highest-friction moment in the product, so it gets a real
+   spine: a numbered rail you can follow without re-reading. */
+.setup-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s4);
+  padding-bottom: var(--s6);
+  position: relative;
+}
+.setup-step:last-of-type {
+  padding-bottom: var(--s4);
+}
+/* The rail connecting one step to the next. */
+.setup-step:not(:last-of-type)::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 40px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--hairline);
+}
+.step-n {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--coral);
+  background: var(--coral-soft);
+  border: 1px solid color-mix(in srgb, var(--coral) 35%, transparent);
+}
+.step-body > h3 {
+  font-size: 20px;
+  line-height: 26px;
+  margin-bottom: var(--s2);
+  padding-top: 4px;
+}
+.step-body > .muted {
+  max-width: 44rem;
+  margin-bottom: var(--s3);
+}
+.step-body .platform-grid {
+  margin-top: var(--s4);
+}
+
+/* Copy-ready command block. Scrolls on its own rather than widening the page. */
+.cmd {
+  background: var(--surface-sunk);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--coral);
+  border-radius: var(--s3);
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s3);
+  overflow-x: auto;
+}
+.cmd code {
+  background: none;
+  padding: 0;
+  white-space: pre;
+  color: var(--ink);
+  display: block;
+}
+
+.usage-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+  color: var(--ink-muted);
+}
+.usage-list code {
+  color: var(--coral);
+  font-weight: 700;
 }
 
 /* ================================================== friction note (amber)

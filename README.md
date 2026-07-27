@@ -3,14 +3,14 @@
 **An AI that lives in your group chat.** It sits quietly in the conversation, and when you talk to it, it answers — searching the web for anything current, so it's actually useful for settling arguments.
 
 ```
-Dev:  ronaldo is clearly the goat
-Sam:  are you serious, messi has more ballon d'ors
-Dev:  ronaldo has more international goals though
-Sam:  huddle, who actually has more career goals?
+Michael:  ronaldo is clearly the goat
+Sam:      are you serious, messi has more ballon d'ors
+Michael:  ronaldo has more international goals though
+Sam:      huddle, who actually has more career goals?
 
-Bot:  Ronaldo leads career goals; Messi leads on Ballon d'Ors and
-      assists. Sources below — "better" is preference, not stats.
-      · espn.com/...
+Bot:      Ronaldo leads career goals; Messi leads on Ballon d'Ors and
+          assists. Sources below — "better" is preference, not stats.
+          · espn.com/...
 ```
 
 Because it has been listening, you don't have to re-explain the argument. It already knows what you were fighting about.

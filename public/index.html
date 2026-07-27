@@ -102,13 +102,13 @@
             </div>
             <div class="phone-body">
               <div class="msg them">
-                <span class="who">Dev</span>ronaldo is clearly the goat
+                <span class="who">Michael</span>ronaldo is clearly the goat
               </div>
               <div class="msg them">
                 <span class="who">Sam</span>are you serious 😭 &nbsp;messi has more ballon d'ors
               </div>
               <div class="msg them">
-                <span class="who">Dev</span>ronaldo has more international goals tho
+                <span class="who">Michael</span>ronaldo has more international goals tho
               </div>
               <div class="msg me">huddle, who actually has more career goals?</div>
               <div class="msg bot typing" aria-hidden="true">
@@ -214,50 +214,148 @@
         <section class="band" id="add">
           <h2 class="band-title">Add it to your chat</h2>
           <p class="band-sub">
-            Three ways to get its attention once it's in:
-            <b>@mention it</b>, <b>reply to it</b>, or just start with <b>"huddle,"</b>.
+            Huddle runs on your own machine or server — you create the bot, so you hold the
+            keys and the bill. Budget about ten minutes the first time.
           </p>
 
-          <div class="platform-grid">
-            <article class="platform">
-              <header><span class="plat-icon tg">✈️</span><h3>Telegram</h3></header>
-              <ol>
-                <li>Message <b>@BotFather</b> → <code>/newbot</code></li>
-                <li><b>/setprivacy</b> → your bot → <b>Disable</b></li>
-                <li>Add the bot to your group</li>
-              </ol>
-              <p class="warn-note">
-                Step 2 isn't optional — without it Telegram hides normal messages from bots.
+          <!-- Step 1: the part every platform shares -->
+          <div class="setup-step">
+            <div class="step-n" aria-hidden="true">1</div>
+            <div class="step-body">
+              <h3>Get it running</h3>
+              <p class="muted">
+                Clone the repo and install. The planner works with no API key at all; add one
+                to unlock the part that answers questions.
               </p>
-            </article>
-
-            <article class="platform">
-              <header><span class="plat-icon dc">🎮</span><h3>Discord</h3></header>
-              <ol>
-                <li>Developer Portal → New Application → Bot</li>
-                <li>Enable <b>Message Content Intent</b></li>
-                <li>OAuth2 → invite it to your server</li>
-              </ol>
-              <p class="warn-note">Same trap as Telegram — the intent is required.</p>
-            </article>
-
-            <article class="platform">
-              <header><span class="plat-icon im">💬</span><h3>iMessage</h3></header>
-              <ol>
-                <li>Grant your terminal <b>Full Disk Access</b></li>
-                <li>Run <code>ENABLE_IMESSAGE=1 npm run bots</code></li>
-                <li>It replies in your existing threads</li>
-              </ol>
-              <p class="warn-note">
-                Apple has no bot API — this relays through your own Mac, so messages send from
-                your number.
+              <pre class="cmd"><code>git clone https://github.com/prit6767/huddle
+cd huddle &amp;&amp; npm install
+export ANTHROPIC_API_KEY=sk-ant-...   # optional
+npm start                             # → localhost:3000</code></pre>
+              <p class="muted">
+                Leave that running. The badge in this page's header tells you which engine is
+                live — a model name, or <code>heuristic</code> if there's no key.
               </p>
-            </article>
+            </div>
+          </div>
+
+          <!-- Step 2: platform-specific token -->
+          <div class="setup-step">
+            <div class="step-n" aria-hidden="true">2</div>
+            <div class="step-body">
+              <h3>Create the bot and get a token</h3>
+              <p class="muted">
+                Pick your platform. Each one has exactly one step people miss — it's called out
+                in amber.
+              </p>
+
+              <div class="platform-grid">
+                <article class="platform">
+                  <header><span class="plat-icon tg">✈️</span><h3>Telegram</h3></header>
+                  <ol>
+                    <li>Message <b>@BotFather</b> → <code>/newbot</code> → copy the token</li>
+                    <li><b>/setprivacy</b> → your bot → <b>Disable</b></li>
+                    <li>Add the bot to your group</li>
+                    <li>Remove it and re-add it</li>
+                  </ol>
+                  <p class="warn-note">
+                    Privacy mode is cached when the bot joins. Skip the re-add and it stays
+                    deaf to normal messages — which is the whole product.
+                  </p>
+                </article>
+
+                <article class="platform">
+                  <header><span class="plat-icon dc">🎮</span><h3>Discord</h3></header>
+                  <ol>
+                    <li>
+                      <a
+                        href="https://discord.com/developers/applications"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >Developer Portal</a
+                      >
+                      → New Application → Bot
+                    </li>
+                    <li>Reset Token → copy it</li>
+                    <li>Enable <b>Message Content Intent</b></li>
+                    <li>
+                      OAuth2 → URL Generator → scope <code>bot</code>, then Send Messages, Read
+                      Message History, Add Reactions
+                    </li>
+                    <li>Open the generated URL to invite it</li>
+                  </ol>
+                  <p class="warn-note">
+                    Without Message Content Intent, Discord delivers empty messages and the bot
+                    reads nothing.
+                  </p>
+                </article>
+
+                <article class="platform">
+                  <header><span class="plat-icon im">💬</span><h3>iMessage</h3></header>
+                  <ol>
+                    <li>System Settings → Privacy &amp; Security → <b>Full Disk Access</b></li>
+                    <li>Add your terminal app, then fully quit and reopen it</li>
+                    <li>No token — it uses the Messages app you're signed into</li>
+                    <li>Approve the Automation prompt on first send</li>
+                  </ol>
+                  <p class="warn-note">
+                    Apple ships no bot API. This drives Messages on a Mac you own, so replies
+                    send from your own number and only while that Mac is awake.
+                  </p>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: run the bots -->
+          <div class="setup-step">
+            <div class="step-n" aria-hidden="true">3</div>
+            <div class="step-body">
+              <h3>Start the bot process</h3>
+              <p class="muted">
+                In a second terminal, with the token from step 2. It reads the same data as the
+                web app, so a plan started in chat opens in the browser and back again.
+              </p>
+              <pre class="cmd"><code>TELEGRAM_BOT_TOKEN=... npm run bots
+DISCORD_BOT_TOKEN=...  npm run bots
+ENABLE_IMESSAGE=1      npm run bots</code></pre>
+              <p class="muted">
+                Deployed somewhere public? Add
+                <code>HUDDLE_PUBLIC_URL=https://your-host</code> so the links it posts are
+                reachable by everyone else in the chat.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 4: use it -->
+          <div class="setup-step">
+            <div class="step-n" aria-hidden="true">4</div>
+            <div class="step-body">
+              <h3>Talk to it</h3>
+              <p class="muted">
+                It reads everything for context but answers <b>only</b> when addressed. Four
+                ways to get its attention:
+              </p>
+              <ul class="usage-list">
+                <li><code>@YourBot</code> who won the game last night?</li>
+                <li><code>huddle,</code> what's the exchange rate right now?</li>
+                <li><code>/ask</code> is this restaurant still open</li>
+                <li>…or just reply to one of its messages</li>
+              </ul>
+              <p class="muted">
+                To plan something: <code>/plan dinner in Austin</code>, then everyone talks
+                normally — it reacts ✅ as it picks up each person. <code>/status</code> shows
+                who's answered, <code>/go</code> returns the three options.
+                <code>/usage</code> shows what today cost, <code>/forget</code> drops the
+                context it's holding.
+              </p>
+            </div>
           </div>
 
           <p class="friction">
-            WhatsApp has no group-bot API at all, so there's no honest way to do it. Paste an
-            invite link there instead — it works everywhere.
+            WhatsApp has no group-bot API at all, so there's no honest way to do it — the
+            unofficial workaround gets phone numbers banned. Paste a huddle's invite link into
+            WhatsApp instead: it unfurls into a card and everyone taps through. One extra tap,
+            works in every chat app on earth, zero setup.
           </p>
         </section>
 
