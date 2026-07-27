@@ -45,8 +45,9 @@
   //   ANTHROPIC_API_KEY, SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, SLACK_SIGNING_SECRET
   "observability": { "enabled": true },
 
-  "routes": [
-    { "pattern": "huddle-hq.com/*", "zone_name": "huddle-hq.com" },
-    { "pattern": "www.huddle-hq.com/*", "zone_name": "huddle-hq.com" }
-  ]
+  // Deploys to https://huddle.<your-subdomain>.workers.dev out of the box.
+  // Attach huddle-hq.com afterward from the dashboard:
+  //   Workers & Pages -> huddle -> Settings -> Domains & Routes -> Add Custom Domain
+  // (needs the domain's nameservers on Cloudflare first; TLS is automatic).
+  "workers_dev": true
 }
