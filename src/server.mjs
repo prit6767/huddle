@@ -15,6 +15,10 @@ import { GROUP_TYPES } from './vocab.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(here, '..', 'public');
 const PORT = Number(process.env.PORT || 3000);
+// The canonical origin this instance is reached at. Chat apps resolve relative
+// URLs against whatever host served the page, so og:url and rel=canonical have
+// to be absolute or a link pasted into WhatsApp unfurls against the wrong host.
+const PUBLIC_URL = (process.env.HUDDLE_PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -78,7 +82,7 @@ const escapeAttr = (value) =>
 async function renderHuddlePage(huddleId) {
   const html = await readFile(join(PUBLIC_DIR, 'index.html'), 'utf8');
   const huddle = getHuddle(huddleId);
-  if (!huddle) return html;
+  if (!huddle) return withCanonical(html, '/');
 
   const answered = huddle.participants.filter((p) => p.done).length;
   const description = huddle.options.length
@@ -91,10 +95,25 @@ async function renderHuddlePage(huddleId) {
     `<meta property="og:title" content="${escapeAttr(huddle.title)}" />`,
     `<meta property="og:description" content="${escapeAttr(description)}" />`,
     '<meta property="og:type" content="website" />',
+    `<meta property="og:url" content="${escapeAttr(`${PUBLIC_URL}/h/${huddle.id}`)}" />`,
     '<meta name="twitter:card" content="summary" />',
   ].join('\n    ');
 
-  return html.replace(/<!--OG-->[\s\S]*?<!--\/OG-->/, tags);
+  return withCanonical(html.replace(/<!--OG-->[\s\S]*?<!--\/OG-->/, tags), `/h/${huddle.id}`);
+}
+
+/**
+ * Point rel=canonical (and og:url, where the page didn't already set one) at
+ * this instance's real origin. Without it every deployment claims to be
+ * localhost, which is wrong in previews and actively harmful once a real
+ * domain is in front of the app.
+ */
+function withCanonical(html, path) {
+  const url = `${PUBLIC_URL}${path}`;
+  const tags =
+    `<link rel="canonical" href="${escapeAttr(url)}" />` +
+    (html.includes('og:url') ? '' : `\n    <meta property="og:url" content="${escapeAttr(url)}" />`);
+  return html.replace('</head>', `  ${tags}\n  </head>`);
 }
 
 async function serveStatic(res, urlPath) {
@@ -109,13 +128,18 @@ async function serveStatic(res, urlPath) {
   if (!full.startsWith(PUBLIC_DIR)) return fail(res, 403, 'Forbidden');
 
   try {
+    // HTML gets the canonical treatment; assets are served as-is.
+    if (extname(full) === '.html' || urlPath === '/') {
+      const html = await readFile(full, 'utf8');
+      return send(res, 200, withCanonical(html, '/'), { 'content-type': MIME['.html'] });
+    }
     const body = await readFile(full);
     send(res, 200, body, { 'content-type': MIME[extname(full)] || 'application/octet-stream' });
   } catch {
     // Unknown path: hand it to the client-side router.
     try {
-      const body = await readFile(join(PUBLIC_DIR, 'index.html'));
-      send(res, 200, body, { 'content-type': MIME['.html'] });
+      const html = await readFile(join(PUBLIC_DIR, 'index.html'), 'utf8');
+      send(res, 200, withCanonical(html, '/'), { 'content-type': MIME['.html'] });
     } catch {
       fail(res, 404, 'Not found');
     }
