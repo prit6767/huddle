@@ -26,6 +26,9 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.ico': 'image/x-icon',
 };
 
 function send(res, status, body, headers = {}) {
@@ -96,7 +99,12 @@ async function renderHuddlePage(huddleId) {
     `<meta property="og:description" content="${escapeAttr(description)}" />`,
     '<meta property="og:type" content="website" />',
     `<meta property="og:url" content="${escapeAttr(`${PUBLIC_URL}/h/${huddle.id}`)}" />`,
-    '<meta name="twitter:card" content="summary" />',
+    // This block replaces the whole OG section, so the card image has to be
+    // restated here or a pasted huddle link unfurls without one.
+    `<meta property="og:image" content="${escapeAttr(`${PUBLIC_URL}/og.png`)}" />`,
+    '<meta property="og:image:width" content="1200" />',
+    '<meta property="og:image:height" content="630" />',
+    '<meta name="twitter:card" content="summary_large_image" />',
   ].join('\n    ');
 
   return withCanonical(html.replace(/<!--OG-->[\s\S]*?<!--\/OG-->/, tags), `/h/${huddle.id}`);

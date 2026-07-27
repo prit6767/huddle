@@ -69,7 +69,7 @@ Any host that runs Node works. A Render blueprint is included:
 Then point share links at it so the bots post reachable URLs:
 
 ```bash
-HUDDLE_PUBLIC_URL=https://your-app.onrender.com
+HUDDLE_PUBLIC_URL=https://huddle-hq.com
 ```
 
 Free-tier caveats: the service sleeps after ~15 min idle (first request takes ~30s
@@ -220,7 +220,7 @@ Honest limitations:
 By default share links say `localhost:3000`, which is useless to anyone else. Point it at a reachable host:
 
 ```bash
-HUDDLE_PUBLIC_URL=https://huddle.example.com npm run bots
+HUDDLE_PUBLIC_URL=https://huddle-hq.com npm run bots
 ```
 
 ---
