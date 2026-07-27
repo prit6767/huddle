@@ -164,6 +164,15 @@ const routes = [
         huddles: listHuddles().length,
         groupTypes: GROUP_TYPES,
         defaultWindow: { start: todayStr(), end: addDays(todayStr(), 13) },
+        // One bot instance serves unlimited groups — every lookup is keyed by
+        // (platform, chatId). So whoever runs this can publish add-to-group
+        // links and nobody else needs a terminal. Unset here means "no hosted
+        // bot", and the page falls back to the self-host instructions rather
+        // than offering a button that goes nowhere.
+        invites: {
+          telegram: process.env.HUDDLE_TELEGRAM_INVITE || null,
+          discord: process.env.HUDDLE_DISCORD_INVITE || null,
+        },
       });
     },
   },

@@ -89,6 +89,23 @@ npm start                                              # terminal 1
 
 ## Adding it to a group chat
 
+**One instance serves unlimited groups.** Every lookup is keyed by
+`(platform, chatId)`, so you set this up once and then anyone can add your bot
+to their own group — no terminal, no key, nothing to install on their side.
+
+Set these and the landing page shows one-tap add buttons instead of setup steps:
+
+```bash
+HUDDLE_TELEGRAM_INVITE=https://t.me/YourBotName?startgroup=true
+HUDDLE_DISCORD_INVITE=https://discord.com/oauth2/authorize?client_id=...&scope=bot&permissions=76800
+```
+
+Unset, the page falls back to the self-host instructions rather than showing a
+button that goes nowhere. Note that whoever hosts pays for every group's usage —
+the per-chat and global daily caps below are what keep that bounded.
+
+To run it yourself:
+
 ```bash
 npm start          # web app,  terminal 1
 npm run bots       # chat bots, terminal 2

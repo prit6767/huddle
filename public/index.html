@@ -213,10 +213,45 @@
         <!-- ---------------------------- add it --------------------------- -->
         <section class="band" id="add">
           <h2 class="band-title">Add it to your chat</h2>
-          <p class="band-sub">
-            Huddle runs on your own machine or server — you create the bot, so you hold the
-            keys and the bill. Budget about ten minutes the first time.
-          </p>
+
+          <!-- ---- Path A: hosted bot. Shown only when this instance actually
+               publishes invite links, so the button can never go nowhere. ---- -->
+          <div class="quickadd" id="quickadd" hidden>
+            <div class="quickadd-head">
+              <span class="quickadd-badge">No setup</span>
+              <h3>Add the hosted bot</h3>
+              <p class="muted">
+                One tap. No terminal, no API key, nothing to install — this instance is already
+                running and one bot serves any number of groups.
+              </p>
+            </div>
+            <div class="quickadd-actions" id="quickadd-actions"></div>
+            <p class="quickadd-note muted">
+              Telegram needs one extra tap after you add it: the bot must be able to read
+              messages to follow a conversation. Everything else works immediately.
+            </p>
+          </div>
+
+          <!-- ---- Path B: self-host ---- -->
+          <div class="selfhost-head">
+            <!-- becomes "Or run your own" when a hosted bot is on offer -->
+            <h3 id="selfhost">Run your own</h3>
+            <p class="band-sub">
+              You hold the keys and the bill, and nothing leaves your machine. Do this once and
+              your bot serves every group you add it to — nobody else needs a terminal. Budget
+              about ten minutes.
+            </p>
+            <p class="quickadd-note muted">
+              In a hurry?
+              <a
+                href="https://render.com/deploy?repo=https://github.com/prit6767/huddle"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Deploy to Render</a
+              >
+              runs steps 1 and 3 for you — you still create the bot in step 2.
+            </p>
+          </div>
 
           <!-- Step 1: the part every platform shares -->
           <div class="setup-step">

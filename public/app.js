@@ -521,6 +521,34 @@ async function copy(text, button, confirmation) {
   }, 1800);
 }
 
+/**
+ * Add-to-group buttons for the hosted bot.
+ *
+ * One instance serves unlimited chats, so if whoever deployed this published
+ * invite links, visitors need no setup at all. If they didn't, the whole block
+ * stays hidden and the self-host steps below are the only path — better than a
+ * button that goes nowhere.
+ */
+function renderInvites(invites) {
+  const block = $('#quickadd');
+  if (!block) return;
+  const links = [
+    { key: 'telegram', label: 'Add to Telegram', icon: '✈️' },
+    { key: 'discord', label: 'Add to Discord', icon: '🎮' },
+  ].filter((l) => invites?.[l.key]);
+
+  if (!links.length) return; // stays hidden; self-host is the only honest path
+  $('#quickadd-actions').innerHTML = links
+    .map(
+      (l) =>
+        `<a class="btn primary lg" href="${escapeHtml(invites[l.key])}" target="_blank"
+           rel="noopener noreferrer"><span aria-hidden="true">${l.icon}</span> ${l.label}</a>`
+    )
+    .join('');
+  block.hidden = false;
+  document.getElementById('selfhost').textContent = 'Or run your own';
+}
+
 // ---------------------------------------------------------------- boot
 window.addEventListener('popstate', route);
 
@@ -528,6 +556,7 @@ window.addEventListener('popstate', route);
   try {
     const health = await api('/api/health');
     $('#engine-badge').textContent = health.engine;
+    renderInvites(health.invites);
     $('#f-start').value = health.defaultWindow.start;
     $('#f-end').value = health.defaultWindow.end;
     $('#f-start').min = health.defaultWindow.start;

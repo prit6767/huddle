@@ -777,6 +777,56 @@ select:focus {
   color: var(--ink);
 }
 
+/* ======================================================= quick add (hosted)
+   The one-tap path, when the deployment offers one. Coral-tinted so it reads
+   as the recommended route without shouting at the self-hosters below. */
+.quickadd {
+  background: var(--coral-soft);
+  border: 1px solid color-mix(in srgb, var(--coral) 30%, transparent);
+  border-radius: var(--r-card);
+  padding: var(--s5);
+  margin-bottom: var(--s6);
+}
+.quickadd-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--coral);
+  border: 1px solid color-mix(in srgb, var(--coral) 40%, transparent);
+  border-radius: var(--r-chip);
+  padding: 2px var(--s3);
+  margin-bottom: var(--s3);
+}
+.quickadd-head h3 {
+  font-size: 22px;
+  line-height: 28px;
+  margin-bottom: var(--s2);
+}
+.quickadd-head .muted {
+  max-width: 42rem;
+}
+.quickadd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin: var(--s4) 0 0;
+}
+.quickadd-note {
+  font-size: 13px;
+  line-height: 18px;
+  margin-top: var(--s3);
+}
+.selfhost-head {
+  margin-bottom: var(--s5);
+}
+.selfhost-head h3 {
+  font-size: 22px;
+  line-height: 28px;
+  margin-bottom: var(--s2);
+}
+
 /* ==================================================== numbered setup steps
    Setup is the highest-friction moment in the product, so it gets a real
    spine: a numbered rail you can follow without re-reading. */
