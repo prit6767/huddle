@@ -234,6 +234,14 @@ participant chat ──▶ extract ──▶ merge ──▶ filter + score ─�
 
 ---
 
+## Design language
+
+The visual system is documented in [DESIGN.md](DESIGN.md) — **"Warm Honesty."** The load-bearing
+idea: *confidence is a visual system, not a footnote.* Anything computed reads solid and green;
+anything merely listed reads dashed and muted, so you can tell "we did the arithmetic" from "the
+catalog says so" without reading a word. Accessibility and dietary claims are locked to the listed
+form permanently.
+
 ## Design decisions worth knowing
 
 **The model never overrides a hard constraint.** Filtering happens in plain JavaScript before Claude sees anything. An LLM that hallucinates a wheelchair ramp is a safety problem, not a UX problem.

@@ -231,7 +231,13 @@ function accommodationsFor(candidate, consensus) {
   if (candidate.slot.missing.length) {
     out.push({ text: `${candidate.slot.missing.join(', ')} can't make this one`, source: 'computed' });
   }
-  return out.slice(0, 6);
+
+  // Computed first, listed after. What we actually know leads; what the
+  // catalog merely claims follows. The order is part of the honesty system,
+  // so it is settled here rather than left to each renderer.
+  return out
+    .sort((a, b) => (a.source === b.source ? 0 : a.source === 'computed' ? -1 : 1))
+    .slice(0, 6);
 }
 
 /**

@@ -129,14 +129,17 @@ function renderChat(me) {
 function renderRoster(h) {
   $('#roster').innerHTML = h.participants.length
     ? h.participants
-        .map(
-          (p) =>
-            `<li><span>${escapeHtml(p.name)}${
-              p.id === state.participantId ? ' <span class="muted">(you)</span>' : ''
-            }</span><span class="status ${p.done ? 'ready' : ''}">${
+        .map((p) => {
+          const initial = escapeHtml((p.name || '?').trim().charAt(0).toUpperCase());
+          const you = p.id === state.participantId ? ' <span class="ink-faint">(you)</span>' : '';
+          return `<li>
+            <span class="avatar" aria-hidden="true">${initial}</span>
+            <span class="who">${escapeHtml(p.name)}${you}</span>
+            <span class="status ${p.done ? 'ready' : ''}">${
               p.done ? 'ready' : p.answered ? 'partial' : 'waiting'
-            }</span></li>`
-        )
+            }</span>
+          </li>`;
+        })
         .join('')
     : '<li class="muted">Nobody yet — share the link.</li>';
 }
@@ -176,9 +179,29 @@ function renderConsensus(c) {
 
   body.innerHTML =
     `<ul class="facts">${facts
-      .map(([k, v]) => `<li><span class="k">${escapeHtml(k)}</span><span>${v}</span></li>`)
+      .map(([k, v]) => `<li><span class="k">${escapeHtml(k)}</span><span class="v">${v}</span></li>`)
       .join('')}</ul>` +
     c.frictions.map((f) => `<p class="friction">${escapeHtml(f)}</p>`).join('');
+}
+
+/**
+ * When a constraint changes the server drops the computed options. Rather than
+ * letting stale certainty vanish instantly, fade it out over 200ms so the
+ * clearing is legible — old confidence should be seen to leave.
+ */
+function clearResultsWithFade() {
+  const section = $('#results');
+  const options = $('#options');
+  if (section.hidden || !options.children.length) {
+    section.hidden = true;
+    return;
+  }
+  options.classList.add('clearing');
+  setTimeout(() => {
+    options.classList.remove('clearing');
+    options.innerHTML = '';
+    section.hidden = true;
+  }, 200);
 }
 
 function renderResults(h) {
@@ -191,7 +214,7 @@ function renderResults(h) {
     return;
   }
   if (!h.options.length) {
-    section.hidden = true;
+    clearResultsWithFade();
     return;
   }
 
