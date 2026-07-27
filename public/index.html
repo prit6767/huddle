@@ -333,12 +333,16 @@ npm start                             # → localhost:3000</code></pre>
                   <ol>
                     <li>System Settings → Privacy &amp; Security → <b>Full Disk Access</b></li>
                     <li>Add your terminal app, then fully quit and reopen it</li>
-                    <li>No token — it uses the Messages app you're signed into</li>
-                    <li>Approve the Automation prompt on first send</li>
+                    <li>Run <code>npm run doctor</code> to check every permission</li>
+                    <li>
+                      No token. For its own identity, sign Messages into a
+                      <b>dedicated Apple ID</b> — an email works, no phone number needed
+                    </li>
                   </ol>
                   <p class="warn-note">
-                    Apple ships no bot API. This drives Messages on a Mac you own, so replies
-                    send from your own number and only while that Mac is awake.
+                    Apple ships no bot API. This drives Messages on a Mac you own, so it only
+                    runs while that Mac is awake — and without its own Apple ID, replies send
+                    from your number.
                   </p>
                 </article>
               </div>

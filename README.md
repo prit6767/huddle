@@ -181,6 +181,20 @@ It ignores banter: "no way" and "we should chat later" don't register as a veto 
 
 **WhatsApp has no legitimate path.** The official Business API is 1:1 customer messaging with no group support whatsoever. The only workaround is driving WhatsApp Web with an unofficial library, which violates the ToS and reliably gets phone numbers banned — so this project doesn't do it.
 
+**A phone number does not help, and it's worth knowing why.** The obvious idea
+is to buy a number from Twilio and let people text it. But
+[Twilio closed Group MMS to new accounts in March 2022](https://www.twilio.com/en-us/changelog/limitation-to-group-mms) —
+only accounts that already had it can use it, so a number bought today can do
+1:1 SMS and nothing else. On top of that, US A2P messaging requires
+[10DLC registration](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc)
+with a 10–15 day review that trial accounts cannot even submit. A number buys
+you a slower, costlier version of a thing that still doesn't do groups.
+
+What actually works, in order of effort: **Telegram and Discord** (real bot
+APIs, one tap, no number), then **iMessage with a dedicated Apple ID** (a real
+contact in a real group, but needs a Mac you leave on), then the **invite
+link**, which works in every chat app on earth including WhatsApp.
+
 What works instead: the invite link. Paste `…/h/<id>` into any WhatsApp or iMessage thread and it unfurls into a card with the occasion and city; everyone taps through to the web app. That's one extra tap versus a bot, and it works in every chat app on earth with zero setup.
 
 ### Telegram
@@ -205,13 +219,31 @@ Step 2 is the one everyone misses. With privacy mode on, Telegram only delivers 
 Apple ships no bot API and there is no server-side way to join a conversation. The only thing that works — and how every "iMessage bot" including the commercial ones is built — is automating Messages on a Mac you control: read `~/Library/Messages/chat.db`, send via AppleScript.
 
 1. **System Settings → Privacy & Security → Full Disk Access** → add your terminal app (Terminal, iTerm, VS Code — whichever launches node), then **fully quit and reopen it**
-2. `ENABLE_IMESSAGE=1 npm run bots`
-3. Approve the Automation prompt for controlling Messages on first send
+2. `npm run doctor` — checks every permission and tells you exactly what's missing
+3. `ENABLE_IMESSAGE=1 npm run bots`
+4. Approve the Automation prompt for controlling Messages on first send
+
+macOS grants these permissions silently and denies them silently, so a broken
+setup looks identical to a working one until nothing happens. That's what
+`npm run doctor` is for — run it first.
+
+#### Giving it its own identity
+
+By default the relay sends from whatever account Messages is signed into, so to
+the group it looks like *you* typing. To make Huddle a separate contact people
+can add to a chat:
+
+1. Create a **dedicated Apple ID** for it (appleid.apple.com)
+2. Sign that Mac's Messages app into that Apple ID
+3. Run the relay there
+
+**No phone number needed** — an Apple ID registers with just an email address,
+and that email becomes a working iMessage handle. Friends add that address to
+the group like any other contact.
 
 Honest limitations:
 
 - Runs only while that Mac is awake, logged in, and running Messages.
-- Messages send from **your own number** — to the group it looks like you typing, not a bot.
 - No tapbacks, so the ✅ acknowledgment is silent there; the bot only speaks for `/status` and `/go`.
 - `chat.db` is an internal Apple format that changes between macOS releases. The reader handles both the legacy `text` column and the newer `attributedBody` blob, with a fallback, but it is not a supported interface and Apple can break it.
 
