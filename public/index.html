@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Huddle — the AI you add to your group chat</title>
+    <meta
+      name="description"
+      content="Huddle is an open-source AI that lives in your group chat. It settles arguments with real sources, and turns 'where should we go?' into three bookable plans. Telegram, Discord, iMessage."
+    />
     <!--OG--><meta property="og:title" content="Huddle" />
     <meta
       property="og:description"
@@ -18,6 +22,20 @@
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <!-- Boot log gate: decide before first paint whether the terminal intro
+         runs, so repeat visitors and reduced-motion users never see a flash.
+         Once per browser session, skippable with any key or click. -->
+    <script>
+      try {
+        if (
+          !sessionStorage.getItem('huddle:booted') &&
+          !matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+          document.documentElement.dataset.boot = '1';
+          sessionStorage.setItem('huddle:booted', '1');
+        }
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="/styles.css" />
     <link
       rel="icon"
@@ -25,6 +43,21 @@
     />
   </head>
   <body>
+    <!-- ====================== BOOT LOG (once per session) =============== -->
+    <div id="bootlog" class="bootlog" aria-hidden="true">
+      <div class="bootlog-inner">
+        <p class="bootlog-brand"><span class="brand-mark">◍</span> huddle/0.1</p>
+        <pre class="bootlog-banner">
+█   █  █   █  ████   ████   █      █████
+█   █  █   █  █   █  █   █  █      █
+█████  █   █  █   █  █   █  █      ████
+█   █  █   █  █   █  █   █  █      █
+█   █   ███   ████   ████   █████  █████</pre>
+        <div id="bootlog-lines" class="bootlog-lines"></div>
+        <p class="bootlog-skip">any key to skip</p>
+      </div>
+    </div>
+
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand-mark" aria-hidden="true">◍</span>
@@ -78,6 +111,9 @@
                 <span class="who">Dev</span>ronaldo has more international goals tho
               </div>
               <div class="msg me">huddle, who actually has more career goals?</div>
+              <div class="msg bot typing" aria-hidden="true">
+                <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+              </div>
               <div class="msg bot">
                 <span class="who bot-who"><span class="brand-mark">◍</span> Huddle</span>
                 Ronaldo leads on career goals; Messi leads on Ballon d'Ors and assists.
@@ -119,6 +155,58 @@
                 thing this exists to eliminate.
               </p>
             </article>
+          </div>
+        </section>
+
+        <!-- ------------------------ honesty system ----------------------- -->
+        <section class="band" id="honesty">
+          <h2 class="band-title">It tells you what it actually knows</h2>
+          <p class="band-sub">
+            Every line on a plan is labelled by where it came from. Solid green means
+            <b>we did the arithmetic</b> from what your group said. Dashed means
+            <b>the catalog says so</b> — and we haven't checked. Accessibility and dietary
+            claims never get the green tick, because being wrong there hurts someone.
+          </p>
+
+          <div class="honesty-demo">
+            <article class="option demo-option" aria-label="Example plan option card">
+              <div class="headline">The easy yes</div>
+              <div class="venue">Neighborhood Noodle House</div>
+              <div class="when">Sat 6:30 pm — the window all 5 of you cover</div>
+              <div class="price">~$18/person · ~$90 total</div>
+              <p class="why">
+                Under everyone's budget with room to spare, and the only slot Priya and Marcus
+                both make.
+              </p>
+              <div class="tags">
+                <span class="tag check">under $20/person</span>
+                <span class="tag check">works for all 5</span>
+                <span class="tag listed">vegetarian (for Sam)</span>
+                <span class="tag listed">step-free (for Marta)</span>
+              </div>
+              <p class="caveat">Step-free access comes from the listing — call ahead to confirm.</p>
+            </article>
+
+            <ul class="honesty-legend">
+              <li>
+                <span class="tag check">computed</span>
+                <p>Derived from what people said. The arithmetic is ours, and it's correct.</p>
+              </li>
+              <li>
+                <span class="tag listed">from the catalog</span>
+                <p>
+                  Listed by the venue, not verified by us. The card says so instead of
+                  pretending.
+                </p>
+              </li>
+              <li>
+                <span class="tag none">4.6★ (1,204 reviews)</span>
+                <p>
+                  Doesn't exist here. No ratings, no stars, no invented social proof —
+                  the data model won't hold one.
+                </p>
+              </li>
+            </ul>
           </div>
         </section>
 
@@ -295,6 +383,10 @@
         </div>
 
         <section id="results" hidden>
+          <div id="plan-term" class="term" hidden aria-live="polite">
+            <div class="term-bar">huddle — working it out</div>
+            <div class="term-lines" id="plan-term-lines"></div>
+          </div>
           <div class="results-head">
             <h2>Three ways this works</h2>
             <p class="muted" id="tradeoff"></p>

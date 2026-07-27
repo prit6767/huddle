@@ -6,6 +6,66 @@ const state = {
   busy: false,
 };
 
+// ---------------------------------------------------------------- terminal
+// Shared voice for the boot log and the planning log: timestamped lines,
+// appended on a beat, real clock. All theater — but honest theater: every
+// line names something the code actually does.
+const stamp = () => new Date().toTimeString().slice(0, 8);
+
+function termLine(target, text, hot = false) {
+  const line = document.createElement('div');
+  line.className = `term-line${hot ? ' hot' : ''}`;
+  const t = document.createElement('span');
+  t.className = 't';
+  t.textContent = stamp();
+  line.append(t, document.createTextNode(text));
+  target.appendChild(line);
+  return line;
+}
+
+(function bootlog() {
+  // The inline <head> gate decides whether this runs at all.
+  if (!document.documentElement.dataset.boot) return;
+  const el = $('#bootlog');
+  const out = $('#bootlog-lines');
+
+  const LINES = [
+    'INCOMING GROUP CHAT DETECTED ...',
+    'READING THE ROOM (QUIETLY) ...',
+    'LOADING CONTROLLED VOCABULARIES ...',
+    "BUDGET RULE ARMED: MIN OF EVERYONE'S MAX ...",
+    'FREE TIME = THE OVERLAP, NOT UNANIMITY ...',
+    "STAR RATINGS: NOT FOUND. GOOD — WE DON'T INVENT THOSE.",
+    'STEADY HANDS. CLEAN ARITHMETIC. READY →',
+  ];
+
+  let finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    clearInterval(beat);
+    el.classList.add('bootlog-done');
+    setTimeout(() => {
+      delete document.documentElement.dataset.boot;
+      el.remove();
+    }, 380);
+  }
+
+  let i = 0;
+  const beat = setInterval(() => {
+    if (i >= LINES.length) {
+      clearInterval(beat);
+      setTimeout(finish, 500);
+      return;
+    }
+    termLine(out, LINES[i], i === LINES.length - 1);
+    i++;
+  }, 210);
+
+  el.addEventListener('click', finish);
+  window.addEventListener('keydown', finish, { once: true });
+})();
+
 const QUICK_CHIPS = [
   'Free Saturday after 5, around $25',
   'Any evening this week, keep it cheap',
@@ -350,6 +410,47 @@ $('#quick-chips').addEventListener('click', (event) => {
   $('#chat-input').focus();
 });
 
+/**
+ * The planning log: while finalize runs, the results area becomes a terminal
+ * narrating the actual pipeline (extract → merge → filter → score → narrate).
+ * Under reduced motion it stays a plain button-label change.
+ */
+function startPlanLog() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
+  const results = $('#results');
+  const term = $('#plan-term');
+  const out = $('#plan-term-lines');
+  out.textContent = '';
+  results.hidden = false;
+  results.classList.add('planning');
+  term.hidden = false;
+  results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const n = state.huddle?.consensus?.respondedCount || state.huddle?.participants?.length || 0;
+  const engine = $('#engine-badge').textContent || 'heuristic';
+  const LINES = [
+    `extract   pulling constraints from ${n} ${n === 1 ? 'person' : 'people'} ...`,
+    'merge     budget = min of maxes · dietary = union · time = overlap ...',
+    'filter    dropping every venue that fails a hard constraint ...',
+    'score     attendance first, vibes second, budget headroom last ...',
+    engine === 'heuristic'
+      ? 'narrate   no model configured — deterministic sentences it is ...'
+      : `narrate   asking ${engine} to explain the picks ...`,
+  ];
+  let i = 0;
+  const beat = setInterval(() => {
+    if (i < LINES.length) termLine(out, LINES[i++]);
+  }, 420);
+
+  return function stop(failed) {
+    clearInterval(beat);
+    if (failed) termLine(out, 'error     that did not work — details below.', true);
+    term.hidden = true;
+    results.classList.remove('planning');
+    if (failed && !state.huddle?.options?.length) results.hidden = true;
+  };
+}
+
 $('#finalize').addEventListener('click', async () => {
   if (state.busy) return;
   state.busy = true;
@@ -358,15 +459,18 @@ $('#finalize').addEventListener('click', async () => {
   button.disabled = true;
   button.textContent = 'Working it out…';
   showError($('#finalize-error'), '');
+  const stopLog = startPlanLog();
 
   try {
     state.huddle = await api(`/api/huddles/${state.huddle.id}/finalize`, {
       method: 'POST',
       body: { participantId: state.participantId },
     });
+    stopLog(false);
     render();
     $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
+    stopLog(true);
     showError($('#finalize-error'), err.message);
     button.textContent = original;
   } finally {

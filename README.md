@@ -73,9 +73,10 @@ HUDDLE_PUBLIC_URL=https://your-app.onrender.com
 ```
 
 Free-tier caveats: the service sleeps after ~15 min idle (first request takes ~30s
-to wake), and the filesystem is ephemeral — `data/huddles.json` is wiped on every
-restart and redeploy, so plans vanish. Fine for a demo; move storage to Postgres
-before anyone relies on it.
+to wake), and the filesystem is ephemeral — `data/huddles.sqlite` is wiped on every
+redeploy, so plans vanish there. Attach a persistent disk (or move to Postgres)
+before anyone relies on it. On any host with a real disk, plans now survive
+restarts out of the box.
 
 For a quick temporary link without deploying, tunnel your local server:
 
@@ -93,7 +94,7 @@ npm start          # web app,  terminal 1
 npm run bots       # chat bots, terminal 2
 ```
 
-Both read the same `data/huddles.json`, so a plan started in a group chat opens in the browser at the same URL and vice versa.
+Both read the same `data/huddles.sqlite`, so a plan started in a group chat opens in the browser at the same URL and vice versa.
 
 ### What it costs
 
@@ -340,12 +341,12 @@ src/
   llm.mjs         Anthropic SDK wrapper, degrades to null on every failure
 public/           single-page client, no build step
 data/venues.json  sample catalog — replace for production
-data/huddles.json created at runtime
+data/huddles.sqlite created at runtime (SQLite via node:sqlite; falls back to huddles.json on Node < 22.5)
 ```
 
 ## Before this is production
 
-- **Storage**: `data/huddles.json` is single-process and rewritten on every mutation. Move to Postgres or SQLite past a handful of concurrent groups.
+- **Storage**: SQLite (`data/huddles.sqlite`, WAL mode) — survives restarts and is safe for the web server and bots to share. Move to Postgres if you outgrow one box.
 - **Auth**: participant identity is an unguessable ID in `localStorage`. Anyone with the share link can join under any name. Fine for a group of friends; not fine for anything with real stakes.
 - **Real venues**: see above. Accessibility tags from places APIs are notoriously incomplete — treat them as a hint that ranks options, never as a promise to the person who needs the ramp. The `listing` labelling exists precisely so this stays honest at scale.
 - **Live availability**: options say "check hours" because nothing here queries actual reservation inventory. OpenTable and Resy both have partner APIs for this.

@@ -8,3 +8,5 @@ data/huddles.json.*.tmp
 cloudflared
 tunnel.log
 app.log
+data/huddles.sqlite
+data/huddles.sqlite-*

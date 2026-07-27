@@ -206,6 +206,159 @@ a {
   }
 }
 
+/* ===================================================== blueprint grid
+   Faint drafting-paper grid pinned behind everything, strongest in the
+   top-right and fading toward the content, plus a few filled cells for
+   texture. Pure decoration: fixed, non-interactive, behind the page. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  --grid-line: color-mix(in srgb, var(--ink) 7%, transparent);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(110% 90% at 88% -5%, black 25%, transparent 72%);
+  mask-image: radial-gradient(110% 90% at 88% -5%, black 25%, transparent 72%);
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  --cell: color-mix(in srgb, var(--ink) 5%, transparent);
+  background-image: linear-gradient(var(--cell), var(--cell)),
+    linear-gradient(var(--cell), var(--cell)),
+    linear-gradient(var(--cell), var(--cell)),
+    linear-gradient(var(--cell), var(--cell));
+  background-repeat: no-repeat;
+  background-size: 47px 47px;
+  background-position: calc(100% - 97px) 49px, calc(100% - 241px) 145px,
+    calc(100% - 49px) 289px, calc(100% - 145px) 481px;
+  -webkit-mask-image: radial-gradient(110% 90% at 88% -5%, black 30%, transparent 70%);
+  mask-image: radial-gradient(110% 90% at 88% -5%, black 30%, transparent 70%);
+}
+
+/* ====================================================== terminal voice
+   One mono aesthetic shared by the boot log and the planning log. Always
+   the warm dark paper regardless of theme — it's a terminal, not a card. */
+.term,
+.bootlog {
+  --term-bg: #211d1a;
+  --term-ink: #b0a69b;
+  --term-dim: #6f665c;
+  --term-hot: #ff7554;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+}
+.term {
+  background: var(--term-bg);
+  color: var(--term-ink);
+  border: 1px solid color-mix(in srgb, var(--term-ink) 18%, transparent);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  margin-bottom: var(--s5);
+}
+.term-bar {
+  padding: var(--s2) var(--s4);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--term-dim);
+  border-bottom: 1px dashed color-mix(in srgb, var(--term-ink) 22%, transparent);
+}
+.term-lines {
+  padding: var(--s4);
+  font-size: 13px;
+  line-height: 22px;
+  min-height: 132px;
+}
+.term-line {
+  white-space: pre-wrap; /* keep the column alignment in stage names */
+}
+.term-line .t {
+  color: var(--term-dim);
+  margin-right: var(--s3);
+}
+.term-line.hot,
+.term-line.hot .t {
+  color: var(--term-hot);
+}
+/* Block cursor on the newest line. Steps, not fades — terminals blink. */
+.term-line:last-child::after,
+.bootlog-lines .term-line:last-child::after {
+  content: '▊';
+  margin-left: 2px;
+  color: var(--term-hot);
+  animation: cursor-blink 1s steps(1) infinite;
+}
+@keyframes cursor-blink {
+  50% { opacity: 0; }
+}
+
+/* ------------------------------------------------ boot log overlay */
+.bootlog {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: var(--term-bg);
+  color: var(--term-ink);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 350ms ease;
+  /* the blueprint grid lives here too, brighter than the page's */
+  background-image: linear-gradient(rgba(176, 166, 155, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(176, 166, 155, 0.07) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+html[data-boot] .bootlog {
+  display: block;
+}
+.bootlog.bootlog-done {
+  opacity: 0;
+  pointer-events: none;
+}
+.bootlog-inner {
+  max-width: 40rem;
+  padding: clamp(24px, 8vh, 96px) var(--s5);
+  margin: 0 auto;
+}
+.bootlog-brand {
+  font-size: 13px;
+  color: var(--term-dim);
+  margin-bottom: var(--s5);
+}
+.bootlog-brand .brand-mark {
+  color: var(--term-hot);
+}
+.bootlog-banner {
+  font-size: clamp(7px, 1.6vw, 12px);
+  line-height: 1.25;
+  color: var(--term-dim);
+  border: 1px dashed color-mix(in srgb, var(--term-ink) 30%, transparent);
+  padding: var(--s4) var(--s5);
+  margin-bottom: var(--s5);
+  overflow: hidden;
+  white-space: pre;
+  width: max-content;
+  max-width: 100%;
+}
+.bootlog-lines {
+  font-size: 13px;
+  line-height: 24px;
+  min-height: 192px;
+}
+.bootlog-skip {
+  margin-top: var(--s5);
+  font-size: 12px;
+  color: var(--term-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* ================================================================ topbar */
 .topbar {
   position: sticky;
@@ -482,6 +635,57 @@ select:focus {
   text-decoration: underline;
   text-underline-offset: 2px;
   margin-right: var(--s2);
+}
+
+/* ------------------------------------------- hero demo: play it once
+   The argument types itself out on load: three messages, the ask, a
+   typing pause, then the bot's answer. Pure CSS — the global
+   prefers-reduced-motion block above kills all of it, which leaves every
+   bubble visible in its final state. */
+.hero .phone-body .msg {
+  animation: msg-in 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.hero .phone-body .msg:nth-child(1) { animation-delay: 0.4s; }
+.hero .phone-body .msg:nth-child(2) { animation-delay: 1.5s; }
+.hero .phone-body .msg:nth-child(3) { animation-delay: 2.6s; }
+.hero .phone-body .msg:nth-child(4) { animation-delay: 3.7s; }
+/* typing indicator: appears after the ask, leaves as the answer lands */
+.hero .phone-body .msg.typing {
+  animation: msg-in 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 4.5s both,
+    msg-out 200ms ease-in 6.3s forwards;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: var(--s3) var(--s4);
+}
+.hero .phone-body .msg:nth-child(6) { animation-delay: 6.5s; }
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes msg-out {
+  to { opacity: 0; height: 0; padding-top: 0; padding-bottom: 0; margin: 0; overflow: hidden; }
+}
+.tdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--coral);
+  opacity: 0.5;
+  animation: tdot-pulse 1s ease-in-out infinite;
+}
+.tdot:nth-child(2) { animation-delay: 0.15s; }
+.tdot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes tdot-pulse {
+  0%, 100% { opacity: 0.35; transform: none; }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+/* Reduced motion: the typing bubble is pure theater — hide it entirely
+   rather than leaving a frozen ellipsis in the transcript. */
+@media (prefers-reduced-motion: reduce) {
+  .hero .phone-body .msg.typing {
+    display: none;
+  }
 }
 
 /* ================================================================= bands */
@@ -808,6 +1012,11 @@ select:focus {
 .results-head {
   margin-bottom: var(--s5);
 }
+/* While the planning log is running, the results area is the log. */
+#results.planning .results-head,
+#results.planning .options {
+  display: none;
+}
 .options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
@@ -887,6 +1096,42 @@ select:focus {
 }
 .tag.listed::before {
   content: "⌁ listed: ";
+}
+/* Landing-page legend only: the form this product refuses to have. */
+.tag.none {
+  background: transparent;
+  border: 1px solid var(--hairline);
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+
+/* -------------------------------------------- landing: honesty demo */
+.honesty-demo {
+  display: grid;
+  grid-template-columns: minmax(min(100%, 18rem), 26rem) 1fr;
+  gap: var(--s6);
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .honesty-demo {
+    grid-template-columns: 1fr;
+  }
+}
+.demo-option {
+  /* it's an exhibit, not a control — no vote buttons, no hover states */
+  cursor: default;
+}
+.honesty-legend {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s2) 0;
+}
+.honesty-legend p {
+  margin-top: var(--s2);
+  color: var(--ink-muted);
+  max-width: 32rem;
 }
 
 .links {

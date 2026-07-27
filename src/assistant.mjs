@@ -42,7 +42,12 @@ function buildRequest(question, context, version) {
   return {
     model: MODEL,
     max_tokens: 1200, // a chat reply; the prompt already demands brevity
-    system: SYSTEM,
+    // The system prompt is identical on every question, and context is resent
+    // each time — so mark the static prefix cacheable. On this workload (many
+    // short questions sharing one prompt) cached input tokens bill at a
+    // fraction of the normal rate, and the parameter is a no-op where
+    // unsupported rather than an error.
+    system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
     // Haiku-tier models reject output_config.effort outright.
     ...(traitsFor().supportsEffort ? { output_config: { effort: EFFORT } } : {}),
     messages: [{ role: 'user', content: userContent }],

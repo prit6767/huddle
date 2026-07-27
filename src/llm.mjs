@@ -66,6 +66,15 @@ export function llmAvailable() {
   );
 }
 
+/**
+ * System prompts here are static per call-site (the extractor and narrator
+ * each reuse one prompt verbatim), so mark them cacheable: repeat calls bill
+ * the shared prefix at the cached-input rate instead of full price.
+ */
+function cacheableSystem(system) {
+  return [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }];
+}
+
 function buildRequest({ system, messages, schema, effort, maxTokens, forMode }) {
   const base = { model: MODEL, max_tokens: maxTokens, messages };
   // Omit effort entirely on models that reject it, rather than eating a 400.
@@ -74,14 +83,14 @@ function buildRequest({ system, messages, schema, effort, maxTokens, forMode }) 
   if (forMode === 'output_config') {
     return {
       ...base,
-      system,
+      system: cacheableSystem(system),
       output_config: { ...effortConfig, format: { type: 'json_schema', schema } },
     };
   }
   if (forMode === 'output_format') {
     return {
       ...base,
-      system,
+      system: cacheableSystem(system),
       ...(traitsFor().supportsEffort ? { output_config: effortConfig } : {}),
       output_format: { type: 'json_schema', schema },
     };
@@ -90,9 +99,11 @@ function buildRequest({ system, messages, schema, effort, maxTokens, forMode }) 
   // and we parse defensively.
   return {
     ...base,
-    system: `${system}\n\nRespond with a single JSON object and nothing else — no prose, no markdown fence. It must validate against this JSON Schema:\n${JSON.stringify(
-      schema
-    )}`,
+    system: cacheableSystem(
+      `${system}\n\nRespond with a single JSON object and nothing else — no prose, no markdown fence. It must validate against this JSON Schema:\n${JSON.stringify(
+        schema
+      )}`
+    ),
   };
 }
 
