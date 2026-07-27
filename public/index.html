@@ -6,7 +6,7 @@
     <title>Huddle — the AI you add to your group chat</title>
     <meta
       name="description"
-      content="Huddle is an open-source AI that lives in your group chat. It settles arguments with real sources, and turns 'where should we go?' into three bookable plans. Telegram, Discord, iMessage."
+      content="Huddle is an open-source AI that lives in your group chat. It settles arguments with real sources, and turns 'where should we go?' into three bookable plans. Slack, Telegram, Discord, iMessage."
     />
     <!--OG--><meta property="og:title" content="Huddle" />
     <meta
@@ -95,7 +95,7 @@
               <a class="btn primary lg" href="#add">Add it to a chat</a>
               <a class="btn ghost lg" href="#planner">Try the planner</a>
             </div>
-            <p class="fineprint">Free &amp; open source · Telegram, Discord, iMessage</p>
+            <p class="fineprint">Free &amp; open source · Slack, Telegram, Discord, iMessage</p>
           </div>
 
           <!-- Chat demo: the argument it was built to end -->
@@ -325,6 +325,26 @@ npm start                             # → localhost:3000</code></pre>
                   <p class="warn-note">
                     Without Message Content Intent, Discord delivers empty messages and the bot
                     reads nothing.
+                  </p>
+                </article>
+
+                <article class="platform">
+                  <header><span class="plat-icon sl">💼</span><h3>Slack</h3></header>
+                  <ol>
+                    <li>
+                      <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer"
+                        >api.slack.com/apps</a
+                      >
+                      → Create New App
+                    </li>
+                    <li><b>Socket Mode</b> → Enable → app-level token</li>
+                    <li>Add bot scopes, subscribe to message events</li>
+                    <li>Install to workspace → copy both tokens</li>
+                    <li>Invite it: <code>/invite @YourApp</code></li>
+                  </ol>
+                  <p class="warn-note">
+                    Socket Mode needs no public URL, so it runs inside a private network — and
+                    self-hosted, no conversation data leaves your infrastructure.
                   </p>
                 </article>
 

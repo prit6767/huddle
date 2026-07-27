@@ -2,6 +2,7 @@
 //
 //   TELEGRAM_BOT_TOKEN=...  -> Telegram
 //   DISCORD_BOT_TOKEN=...   -> Discord
+//   SLACK_BOT_TOKEN + SLACK_APP_TOKEN -> Slack (Socket Mode)
 //   ENABLE_IMESSAGE=1       -> iMessage relay (macOS only)
 //
 // Run alongside the web server: `npm start` in one terminal, `npm run bots`
@@ -9,9 +10,18 @@
 // opens in the browser at the same URL.
 import { telegramConfigured, startTelegram } from './telegram.mjs';
 import { discordConfigured, startDiscord } from './discord.mjs';
+import { slackConfigured, startSlack } from './slack.mjs';
 import { imessageConfigured, startIMessage } from './imessage.mjs';
 import { llmAvailable, MODEL } from '../llm.mjs';
 import { PUBLIC_URL } from './bridge.mjs';
+
+// One misconfigured adapter must never take down the others. Third-party
+// clients can reject from inside their own loops, where a try/catch around
+// start() can't see it, so catch it at the process level too.
+process.on('unhandledRejection', (err) => {
+  console.error(`  [bots] unhandled error: ${err?.message || err}`);
+  console.error('  [bots] continuing — other adapters are unaffected.');
+});
 
 /** Keep a long-running adapter alive across transient failures. */
 async function supervise(name, start) {
@@ -22,6 +32,13 @@ async function supervise(name, start) {
       // Adapters that return (Discord) manage their own connection from here.
       return;
     } catch (err) {
+      // A bad token is not a transient failure; retrying it forever just
+      // buries the message telling you what to fix.
+      if (err.fatal) {
+        console.error(`\n  [${name}] ${err.message}`);
+        console.error(`  [${name}] disabled. Other adapters keep running.\n`);
+        return;
+      }
       console.error(`[${name}] crashed: ${err.message}`);
       console.error(`[${name}] restarting in ${backoff / 1000}s`);
       await new Promise((r) => setTimeout(r, backoff));
@@ -33,6 +50,7 @@ async function supervise(name, start) {
 const adapters = [
   ['telegram', telegramConfigured, startTelegram, 'set TELEGRAM_BOT_TOKEN'],
   ['discord', discordConfigured, startDiscord, 'set DISCORD_BOT_TOKEN'],
+  ['slack', slackConfigured, startSlack, 'set SLACK_BOT_TOKEN and SLACK_APP_TOKEN'],
   [
     'imessage',
     imessageConfigured,

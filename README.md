@@ -176,6 +176,7 @@ It ignores banter: "no way" and "we should chat later" don't register as a veto 
 |---|---|---|
 | **Telegram** | ✅ Full bot | Official Bot API |
 | **Discord** | ✅ Full bot | Official gateway API, real buttons |
+| **Slack** | ✅ Full bot | Socket Mode — no public URL, Block Kit buttons |
 | **iMessage** | ⚠️ Local Mac relay | No bot API exists; automates Messages on a Mac you own |
 | **WhatsApp** | ❌ No bot possible | See below |
 
@@ -213,6 +214,41 @@ Step 2 is the one everyone misses. With privacy mode on, Telegram only delivers 
 3. OAuth2 → URL Generator → scope `bot`, permissions: Send Messages, Read Message History, Add Reactions
 4. Open the generated URL, add to your server
 5. `DISCORD_BOT_TOKEN=... npm run bots`
+
+### Slack
+
+The best-supported platform here, and the one where the product has a second
+job: "where should we do the team lunch / offsite / leaving do" is the same
+constraint-merging problem, except at work dietary and accessibility needs are
+not optional niceties. The `listing` labelling matters *more* in an employment
+context, not less — telling a colleague a venue is step-free when nobody
+checked is a worse failure than it is among friends.
+
+Socket Mode means no public URL and no inbound firewall rule, so it runs from
+a laptop or inside a private network.
+
+1. [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → From scratch
+2. **Socket Mode** → Enable → generate an app-level token with `connections:write`
+   → this is `SLACK_APP_TOKEN` (starts `xapp-`)
+3. **OAuth & Permissions** → Bot Token Scopes:
+   `app_mentions:read`, `channels:history`, `groups:history`, `im:history`,
+   `chat:write`, `reactions:write`, `channels:read`, `groups:read`, `users:read`
+4. **Event Subscriptions** → Enable → subscribe to bot events:
+   `message.channels`, `message.groups`, `message.im`, `app_mention`
+5. **Install to Workspace** → copy the Bot User OAuth Token (`xoxb-`)
+   → this is `SLACK_BOT_TOKEN`
+6. Invite it to a channel: `/invite @YourApp`
+7. `SLACK_BOT_TOKEN=xoxb-... SLACK_APP_TOKEN=xapp-... npm run bots`
+
+No privacy-mode trap here — `channels:history` is what lets it read the
+conversation, and Slack makes you declare it up front. If a token is wrong the
+launcher says which one and disables only that adapter.
+
+**Why this suits companies:** it self-hosts, so no conversation data leaves
+your infrastructure; the per-chat and global daily caps bound what any one
+channel can spend; and nothing it outputs invents a rating or an accessibility
+claim it can't attribute. Run it on an internal host, point `HUDDLE_PUBLIC_URL`
+at that host, and the whole thing stays inside your network.
 
 ### iMessage (macOS only)
 
