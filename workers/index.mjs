@@ -21,6 +21,7 @@ import { todayStr, addDays, datesInWindow } from '../src/timeutil.mjs';
 import { GROUP_TYPES } from '../src/vocab.mjs';
 import { handleSlack, slackInstallUrl } from './slack.mjs';
 import { handleGoogleChat } from './google-chat.mjs';
+import { handleTelegram } from './telegram.mjs';
 
 setCatalog(venues.venues);
 
@@ -118,6 +119,10 @@ export async function handle(request, env, ctx) {
   // Google Chat posts events here (configured in the Chat API console).
   if (path === '/google/events') {
     return handleGoogleChat(request, env);
+  }
+  // Telegram posts updates here (registered via setWebhook).
+  if (path === '/telegram/webhook') {
+    return handleTelegram(request, env, ctx);
   }
   const body = async () => {
     try {
