@@ -183,6 +183,30 @@ describe('slack worker: answering', () => {
     assert.match(row.messages, /just chatting/);
   });
 
+  test('an @mention delivered as BOTH app_mention and message replies once', async () => {
+    // The real double-post bug: a channel @mention arrives as two events with
+    // different event_ids but the same message ts. Must answer exactly once.
+    await withInstall();
+    const base = { type: 'event_callback', team_id: 'T1' };
+    const asMessage = JSON.stringify({
+      ...base,
+      event_id: 'EvA',
+      event: { type: 'message', channel: 'C1', user: 'U9', text: '<@UBOT> price?', ts: '5.0' },
+    });
+    const asMention = JSON.stringify({
+      ...base,
+      event_id: 'EvB', // different id, same underlying message (ts 5.0)
+      event: { type: 'app_mention', channel: 'C1', user: 'U9', text: '<@UBOT> price?', ts: '5.0' },
+    });
+    await handleSlack(events(asMessage), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    await handleSlack(events(asMention), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    restore();
+    const posts = calls.filter((c) => c.url.includes('chat.postMessage'));
+    assert.equal(posts.length, 1, 'the twin event must not double the reply');
+  });
+
   test('a duplicate event id is processed only once', async () => {
     await withInstall();
     const raw = JSON.stringify({

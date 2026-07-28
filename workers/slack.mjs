@@ -268,8 +268,16 @@ export async function handleSlack(request, env, ctx, publicUrl) {
 
     // Ack within Slack's 3s window, then do the slow work (web search) after.
     if (body.type === 'event_callback') {
+      // Dedup on the MESSAGE, not the event: an @mention in a channel arrives
+      // as BOTH an app_mention and a message.channels event, with different
+      // event_ids but the same message ts+channel. Keying on event_id let both
+      // through and the bot answered twice. Fall back to event_id for events
+      // without a message ts.
+      const ev = body.event || {};
+      const dedupKey =
+        ev.ts && ev.channel ? `${body.team_id}:${ev.channel}:${ev.ts}` : body.event_id;
       const run = (async () => {
-        if (!(await firstTimeSeeing(env.DB, body.event_id))) return;
+        if (!(await firstTimeSeeing(env.DB, dedupKey))) return;
         try {
           await processEvent(env, body);
         } catch (err) {
