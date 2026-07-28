@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getClient, llmAvailable, MODEL, traitsFor } from './llm.mjs';
 import { claim, refund, cacheKey, cacheGet, cacheSet, recordUsage, recordCacheHit } from './budget.mjs';
+import { tidyAnswer } from './tidy.mjs';
 
 const EFFORT = process.env.HUDDLE_ASK_EFFORT || 'medium';
 // Each search is billed on top of tokens, so this is the sharpest cost lever
@@ -75,7 +76,7 @@ function readResponse(response) {
       .map((b) => b.text)
       .join('')
       .trim();
-  const text = textFrom(response.content.slice(lastTool + 1)) || textFrom(response.content);
+  const text = tidyAnswer(textFrom(response.content.slice(lastTool + 1)) || textFrom(response.content));
 
   const sources = [];
   for (const block of response.content) {
