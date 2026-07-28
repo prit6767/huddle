@@ -40,7 +40,10 @@
   ],
 
   "vars": {
-    "HUDDLE_PUBLIC_URL": "https://huddle-hq.com"
+    "HUDDLE_PUBLIC_URL": "https://huddle-hq.com",
+    // Google Chat app's project NUMBER — used to verify that inbound events are
+    // genuinely from this app (the bearer token's audience). Not a secret.
+    "GOOGLE_PROJECT_NUMBER": "348219080732"
     // Non-secret invite links can go here too, e.g.
     // "HUDDLE_TELEGRAM_INVITE": "https://t.me/YourBot?startgroup=true"
   },
