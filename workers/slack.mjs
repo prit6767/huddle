@@ -166,6 +166,10 @@ async function processEvent(env, body) {
   }
 
   const answer = await answerWithCache(env, { question: cleaned, context, platform: 'slack', chatId: key });
+  // Record the bot's OWN reply too, so the next message has it in context —
+  // otherwise a follow-up ("7" after "how many days?") arrives with no memory
+  // of what the bot just asked.
+  if (answer?.text) await recordMessage(db, key, 'Huddle', answer.text);
   await slackPost(token, 'chat.postMessage', {
     channel: event.channel,
     thread_ts: event.thread_ts,

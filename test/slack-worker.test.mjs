@@ -165,6 +165,22 @@ describe('slack worker: answering', () => {
     assert.ok(posts[0].payload.text, 'the reply has text');
   });
 
+  test('the bot records its OWN reply, so a follow-up has memory of it', async () => {
+    await withInstall();
+    const raw = JSON.stringify({
+      type: 'event_callback',
+      team_id: 'T1',
+      event_id: 'EvMem',
+      event: { type: 'message', channel: 'C1', user: 'U9', text: '<@UBOT> how many days?', ts: '9.0' },
+    });
+    await handleSlack(events(raw), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    restore();
+    const row = await env.DB.prepare('SELECT messages FROM chatlog WHERE chat_key = ?').bind('slack:T1:C1').first();
+    // Both the user's message and Huddle's reply are in the buffer.
+    assert.match(row.messages, /Huddle/, "the bot's own reply must be saved for context");
+  });
+
   test('a non-addressed message is recorded for context but not answered', async () => {
     await withInstall();
     const raw = JSON.stringify({

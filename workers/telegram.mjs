@@ -110,6 +110,8 @@ async function processUpdate(env, update) {
 
   await tg(token, 'sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
   const answer = await answerWithCache(env, { question, context, platform: 'telegram', chatId: key });
+  // Save the bot's reply so a follow-up has memory of what it just said.
+  if (answer?.text) await recordMessage(env.DB, key, 'Huddle', answer.text);
   await tg(token, 'sendMessage', {
     chat_id: chatId,
     text: formatAnswer(answer),

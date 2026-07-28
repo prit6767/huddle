@@ -158,5 +158,7 @@ export async function handleGoogleChat(request, env) {
   }
 
   const answer = await answerWithCache(env, { question, context, platform: 'google', chatId: key });
+  // Save the bot's reply so a follow-up has memory of what it just said.
+  if (answer?.text) await recordMessage(env.DB, key, 'Huddle', answer.text);
   return reply(formatAnswer(answer));
 }
