@@ -12,18 +12,17 @@ import { ACCESSIBILITY_PROXY, GROUP_AGE_FIT, TIME_BUCKETS } from './vocab.mjs';
 import { toMinutes, fromMinutes, formatDate, formatTime } from './timeutil.mjs';
 import { buildLinks } from './links.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
-
 // The Node build reads the catalog from disk at import time. Workers has no
-// disk to read from at a path like this, so the read is wrapped and the catalog
-// can be injected instead (the Worker imports venues.json as a module and calls
-// setCatalog before serving). Node behaviour is unchanged: the file still loads
-// here, and setCatalog is simply never called.
+// filesystem and no import.meta.url, so the ENTIRE disk path — resolving the
+// module dir included — is wrapped: on workerd fileURLToPath(undefined) throws
+// at module load, which is exactly what crashed the first deploy. The Worker
+// injects the catalog via setCatalog() instead. Node behaviour is unchanged.
 let CATALOG = [];
 try {
+  const here = dirname(fileURLToPath(import.meta.url));
   CATALOG = JSON.parse(readFileSync(join(here, '..', 'data', 'venues.json'), 'utf8')).venues;
 } catch {
-  /* no filesystem (Workers) — the runtime must call setCatalog() */
+  /* no filesystem (Workers) — the runtime calls setCatalog() at startup */
 }
 
 /** Inject the venue catalog. Used by runtimes without a readable filesystem. */
