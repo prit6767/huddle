@@ -20,6 +20,7 @@ import { llmAvailable, MODEL } from '../src/llm.mjs';
 import { todayStr, addDays, datesInWindow } from '../src/timeutil.mjs';
 import { GROUP_TYPES } from '../src/vocab.mjs';
 import { handleSlack, slackInstallUrl } from './slack.mjs';
+import { handleGoogleChat } from './google-chat.mjs';
 
 setCatalog(venues.venues);
 
@@ -113,6 +114,10 @@ export async function handle(request, env, ctx) {
   // Slack owns these paths (configured in its app manifest, not by us).
   if (path.startsWith('/slack/')) {
     return handleSlack(request, env, ctx, PUBLIC_URL);
+  }
+  // Google Chat posts events here (configured in the Chat API console).
+  if (path === '/google/events') {
+    return handleGoogleChat(request, env);
   }
   const body = async () => {
     try {
