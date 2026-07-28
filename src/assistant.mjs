@@ -59,11 +59,22 @@ function buildRequest(question, context, version) {
 
 /** Pull the answer text and any sources out of a response with server-tool blocks. */
 function readResponse(response) {
-  const text = response.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  // With web search, Claude often writes a preamble ("let me look that up",
+  // "I don't have real-time data"), THEN searches, THEN writes the real answer.
+  // Joining every text block glues the preamble onto the answer, so it reads as
+  // answering twice. The answer is the text after the last tool activity — take
+  // only that. With no search, there's a single block and this returns all of it.
+  let lastTool = -1;
+  response.content.forEach((b, i) => {
+    if (b.type === 'server_tool_use' || b.type === 'web_search_tool_result') lastTool = i;
+  });
+  const textFrom = (blocks) =>
+    blocks
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
+  const text = textFrom(response.content.slice(lastTool + 1)) || textFrom(response.content);
 
   const sources = [];
   for (const block of response.content) {
