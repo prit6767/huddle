@@ -16,8 +16,9 @@
 import { randomBytes } from 'node:crypto';
 
 import { verifySlackSignature } from '../src/slack-verify.mjs';
-import { ask, formatAnswer } from '../src/assistant.mjs';
+import { formatAnswer } from '../src/assistant.mjs';
 import { installs } from './store-d1.mjs';
+import { answerWithCache } from './chat-state.mjs';
 
 const SCOPES = [
   'app_mentions:read',
@@ -164,7 +165,7 @@ async function processEvent(env, body) {
     return;
   }
 
-  const answer = await ask({ question: cleaned, context, platform: 'slack', chatId: key });
+  const answer = await answerWithCache(env, { question: cleaned, context, platform: 'slack', chatId: key });
   await slackPost(token, 'chat.postMessage', {
     channel: event.channel,
     thread_ts: event.thread_ts,

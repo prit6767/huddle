@@ -19,8 +19,8 @@
 //      https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://huddle-hq.com/telegram/webhook&secret_token=<SECRET>
 //   5. Add the bot to a group, or DM it. @mention it, reply to it, or start with
 //      "huddle,".
-import { ask, formatAnswer } from '../src/assistant.mjs';
-import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, PER_CHAT_DAILY } from './chat-state.mjs';
+import { formatAnswer } from '../src/assistant.mjs';
+import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, PER_CHAT_DAILY } from './chat-state.mjs';
 
 const API = 'https://api.telegram.org';
 const WAKE = 'huddle';
@@ -109,7 +109,7 @@ async function processUpdate(env, update) {
   }
 
   await tg(token, 'sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
-  const answer = await ask({ question, context, platform: 'telegram', chatId: key });
+  const answer = await answerWithCache(env, { question, context, platform: 'telegram', chatId: key });
   await tg(token, 'sendMessage', {
     chat_id: chatId,
     text: formatAnswer(answer),

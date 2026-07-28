@@ -49,3 +49,14 @@ CREATE TABLE IF NOT EXISTS seen_events (
   event_id TEXT PRIMARY KEY,
   seen_at  TEXT NOT NULL
 );
+
+-- Answer cache. The in-memory cache in budget.mjs is per-isolate, so it's a
+-- no-op on Workers — a re-asked question re-charged Claude every time. This
+-- makes it durable: the same question in the same chat, within the TTL, is
+-- served free. Keyed per chat so a context-shaped answer never leaks across
+-- chats.
+CREATE TABLE IF NOT EXISTS answer_cache (
+  cache_key  TEXT PRIMARY KEY,   -- "<chatId>::<normalized question>"
+  answer     TEXT NOT NULL,      -- JSON {text, sources}
+  expires_at INTEGER NOT NULL    -- epoch ms
+);

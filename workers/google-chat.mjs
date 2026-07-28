@@ -21,7 +21,8 @@
 //   3. Set GOOGLE_PROJECT_NUMBER (the project's *number*, not id) as a Worker var.
 //
 // No secret to copy — verification uses Google's public token info.
-import { ask, formatAnswer } from '../src/assistant.mjs';
+import { formatAnswer } from '../src/assistant.mjs';
+import { answerWithCache } from './chat-state.mjs';
 
 const PER_CHAT_DAILY = 50;
 const CONTEXT_MESSAGES = 20;
@@ -156,6 +157,6 @@ export async function handleGoogleChat(request, env) {
     return reply(`This space has hit its daily limit of ${PER_CHAT_DAILY} questions. Resets at midnight UTC.`);
   }
 
-  const answer = await ask({ question, context, platform: 'google', chatId: key });
+  const answer = await answerWithCache(env, { question, context, platform: 'google', chatId: key });
   return reply(formatAnswer(answer));
 }

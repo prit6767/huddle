@@ -14,9 +14,16 @@ const EFFORT = process.env.HUDDLE_ASK_EFFORT || 'medium';
 // after model choice. Three is enough to settle most factual arguments.
 const MAX_SEARCHES = Number(process.env.HUDDLE_MAX_SEARCHES || 3);
 
+// The model for user-facing answers, separate from the extraction model. This
+// is where answer quality lives, so it's worth spending more here than on the
+// cheap structured-extraction calls — set HUDDLE_ANSWER_MODEL=claude-sonnet-5
+// for noticeably sharper answers while /plan extraction stays on Haiku.
+// Defaults to the global model, so behaviour is unchanged unless you set it.
+const ANSWER_MODEL = process.env.HUDDLE_ANSWER_MODEL || MODEL;
+
 // Start from whatever this model actually supports, then step down if the
 // deployed API disagrees. Picking by model means the common case costs no 400.
-const SEARCH_VERSIONS = [traitsFor().searchTool, 'web_search_20250305', null].filter(
+const SEARCH_VERSIONS = [traitsFor(ANSWER_MODEL).searchTool, 'web_search_20250305', null].filter(
   (v, i, a) => a.indexOf(v) === i
 );
 let searchVersion = SEARCH_VERSIONS[0];
@@ -42,7 +49,7 @@ function buildRequest(question, context, version) {
     : question;
 
   return {
-    model: MODEL,
+    model: ANSWER_MODEL,
     max_tokens: 1200, // a chat reply; the prompt already demands brevity
     // The system prompt is identical on every question, and context is resent
     // each time — so mark the static prefix cacheable. On this workload (many
@@ -51,7 +58,7 @@ function buildRequest(question, context, version) {
     // unsupported rather than an error.
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
     // Haiku-tier models reject output_config.effort outright.
-    ...(traitsFor().supportsEffort ? { output_config: { effort: EFFORT } } : {}),
+    ...(traitsFor(ANSWER_MODEL).supportsEffort ? { output_config: { effort: EFFORT } } : {}),
     messages: [{ role: 'user', content: userContent }],
     ...(version
       ? { tools: [{ type: version, name: 'web_search', max_uses: MAX_SEARCHES }] }
@@ -148,7 +155,7 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
       }
 
       const { text, sources } = readResponse(response);
-      recordUsage({ model: MODEL, usage: response.usage, searches: sources.length ? 1 : 0 });
+      recordUsage({ model: ANSWER_MODEL, usage: response.usage, searches: sources.length ? 1 : 0 });
 
       if (!text) {
         refund(platform, chatId);

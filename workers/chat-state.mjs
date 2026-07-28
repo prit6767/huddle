@@ -5,8 +5,11 @@
 // Keyed by a caller-supplied chat key like "telegram:<chatId>" or
 // "slack:<team>:<channel>" — the platform scopes itself so two platforms (or
 // two workspaces) never share a buffer, a cap, or a dedup entry.
+import { ask } from '../src/assistant.mjs';
+
 export const CONTEXT_MESSAGES = 20;
 export const PER_CHAT_DAILY = 50;
+const CACHE_TTL_MS = Number(process.env.HUDDLE_CACHE_TTL_MS || 10 * 60 * 1000);
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -47,6 +50,42 @@ export async function claimQuestion(db, key, limit = PER_CHAT_DAILY) {
     .run();
   const row = await db.prepare('SELECT used FROM usage WHERE day = ? AND chat_key = ?').bind(day, key).first();
   return (row?.used ?? 1) <= limit;
+}
+
+const cacheKeyOf = (chatId, question) => `${chatId}::${question.toLowerCase().replace(/\s+/g, ' ').trim()}`;
+
+/**
+ * ask(), wrapped in a durable D1 cache. The same question in the same chat,
+ * within the TTL, is served without touching Claude — the real cost win, since
+ * the in-memory cache doesn't survive Workers isolates.
+ *
+ * Only answers backed by web sources are cached: those are the expensive calls
+ * and the ones worth reusing, and it guarantees we never cache an error/refusal
+ * message (which carry no sources).
+ */
+export async function answerWithCache(env, { question, context, platform, chatId }) {
+  const key = cacheKeyOf(chatId, question);
+  const now = Date.now();
+
+  const row = await env.DB.prepare('SELECT answer, expires_at FROM answer_cache WHERE cache_key = ?').bind(key).first();
+  if (row && row.expires_at > now) {
+    try {
+      return { ...JSON.parse(row.answer), cached: true };
+    } catch {
+      /* corrupt row — fall through and re-answer */
+    }
+  }
+
+  const answer = await ask({ question, context, platform, chatId });
+  if (answer?.text && answer.sources?.length) {
+    await env.DB.prepare(
+      `INSERT INTO answer_cache (cache_key, answer, expires_at) VALUES (?, ?, ?)
+       ON CONFLICT(cache_key) DO UPDATE SET answer = excluded.answer, expires_at = excluded.expires_at`
+    )
+      .bind(key, JSON.stringify({ text: answer.text, sources: answer.sources }), now + CACHE_TTL_MS)
+      .run();
+  }
+  return answer;
 }
 
 /** True the first time an id is seen; the platform retries otherwise. */

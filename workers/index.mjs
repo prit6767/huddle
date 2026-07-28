@@ -22,8 +22,8 @@ import { GROUP_TYPES } from '../src/vocab.mjs';
 import { handleSlack, slackInstallUrl } from './slack.mjs';
 import { handleGoogleChat } from './google-chat.mjs';
 import { handleTelegram } from './telegram.mjs';
-import { ask, formatAnswer } from '../src/assistant.mjs';
-import { claimQuestion } from './chat-state.mjs';
+import { formatAnswer } from '../src/assistant.mjs';
+import { claimQuestion, answerWithCache } from './chat-state.mjs';
 
 setCatalog(venues.venues);
 
@@ -172,7 +172,7 @@ export async function handle(request, env, ctx) {
     }
     // Optional short client-supplied context (prior turns on the page).
     const context = String(b.context || '').slice(0, 4000);
-    const answer = await ask({ question, context, platform: 'web', chatId: `web:${ip}` });
+    const answer = await answerWithCache(env, { question, context, platform: 'web', chatId: `web:${ip}` });
     return json({ text: answer.text, sources: answer.sources, formatted: formatAnswer(answer) });
   }
 
