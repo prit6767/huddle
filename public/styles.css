@@ -1488,3 +1488,41 @@ select:focus {
   .hero .phone { animation: none; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none; }
 }
+
+/* --- self-host: collapsed into a details so the one-click path leads --- */
+.selfhost {
+  margin-top: var(--s5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  overflow: hidden;
+}
+.selfhost > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: var(--s4) var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  transition: background 0.15s ease;
+}
+.selfhost > summary:hover { background: var(--surface-sunk); }
+.selfhost > summary::-webkit-details-marker { display: none; }
+.selfhost > summary::after {
+  content: '⌄';
+  position: absolute;
+  right: var(--s5);
+  top: var(--s4);
+  font-size: 22px;
+  line-height: 1.4;
+  color: var(--ink-faint);
+  transition: transform 0.2s ease;
+}
+.selfhost[open] > summary::after { transform: rotate(180deg); }
+.selfhost-summary-title { font-weight: 800; font-size: 18px; padding-right: 28px; }
+.selfhost-inner {
+  padding: var(--s4) var(--s5) var(--s5);
+  border-top: 1px solid var(--hairline);
+}
+.selfhost-inner .setup-step:first-of-type { padding-top: var(--s4); }

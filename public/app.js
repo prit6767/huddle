@@ -571,7 +571,8 @@ function renderInvites(invites) {
     )
     .join('');
   block.hidden = false;
-  document.getElementById('selfhost').textContent = 'Or run your own';
+  // The self-host section is a <details> now; the summary already reads
+  // "Prefer to self-host?", so there's nothing to rename here.
 }
 
 // ---------------------------------------------------------------- boot
