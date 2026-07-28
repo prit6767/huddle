@@ -8,7 +8,7 @@
 //      the bot cannot read ordinary chatter — which is the whole product.
 //   3. Add the bot to your group chat
 //   4. TELEGRAM_BOT_TOKEN=... npm run bots
-import { handleEvent, handleVote } from './bridge.mjs';
+import { handleEvent, handleVote, handleCardResponse } from './bridge.mjs';
 
 const API = 'https://api.telegram.org';
 
@@ -126,15 +126,23 @@ export async function startTelegram() {
       try {
         if (update.callback_query) {
           const q = update.callback_query;
-          const [, , optionId] = q.data.split(':');
-          const action = handleVote({
+          const who = {
             platform: 'telegram',
             chatId: q.message.chat.id,
             userId: q.from.id,
             userName: q.from.first_name || q.from.username,
-            optionId,
-          });
-          await call('answerCallbackQuery', { callback_query_id: q.id, text: 'Vote counted' });
+          };
+          const parts = q.data.split(':'); // vote:hid:optId  OR  card:hid:cardId:choiceId
+          let action;
+          let toast;
+          if (parts[0] === 'card') {
+            action = handleCardResponse({ ...who, cardId: parts[2], choiceId: parts[3] });
+            toast = 'Got it';
+          } else {
+            action = handleVote({ ...who, optionId: parts[2] });
+            toast = 'Vote counted';
+          }
+          await call('answerCallbackQuery', { callback_query_id: q.id, text: toast });
           await deliver(call, q.message.chat.id, q.message.message_id, action);
           continue;
         }

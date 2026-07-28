@@ -17,6 +17,7 @@ import { record, transcript, forget } from '../chatlog.mjs';
 import { ask, formatAnswer } from '../assistant.mjs';
 import { formatUsage } from '../budget.mjs';
 import { MODEL } from '../llm.mjs';
+import { book, billSplitFor } from '../booking.mjs';
 
 const PUBLIC_URL = (process.env.HUDDLE_PUBLIC_URL || 'http://localhost:3000').replace(/\/$/, '');
 const WAKE_WORD = (process.env.HUDDLE_WAKE_WORD || 'huddle').toLowerCase();
@@ -189,7 +190,151 @@ function tallyText(huddle) {
   return `Votes so far:\n${lines.join('\n')}${verdict}`;
 }
 
+// ------------------------------------------------ interactive cards
+//
+// A card is the LAST irreducible human choice the math can't resolve —
+// "Friday or Saturday?" when both satisfy every constraint. It is NOT for
+// re-litigating the venue (that's what the ranked options are for). One active
+// card per huddle. A click is just another normalized inbound event routed
+// back here; adapters render `card`/`buttons` natively and degrade to numbered
+// text. Card state is cleared on a new constraint, like options and votes.
+
+function makeCard({ type, question, reason, choices }) {
+  return {
+    id: `card_${Math.random().toString(36).slice(2, 8)}`,
+    type, // 'poll' | 'rsvp' | 'option_vote'
+    question,
+    reason: reason || null, // names why the math can't decide — honesty, not prose
+    choices: choices.map((label, i) =>
+      typeof label === 'string' ? { id: `c${i + 1}`, label: label.slice(0, 80) } : label
+    ),
+    responses: {}, // choiceId -> [participantId], same shape as huddle.votes
+    createdAt: new Date().toISOString(),
+    stale: false,
+  };
+}
+
+/** Choices as buttons; the id round-trips through the adapter's callback data. */
+function cardButtons(huddle) {
+  const c = huddle.card;
+  return c.choices.map((ch) => ({
+    id: `card:${huddle.id}:${c.id}:${ch.id}`, // fits Telegram's 64-byte cap
+    label: ch.label.slice(0, 40),
+  }));
+}
+
+/** The degrade path: the card as numbered text with a live tally. */
+function cardText(huddle) {
+  const c = huddle.card;
+  const lines = [c.question];
+  if (c.reason) lines.push(`(${c.reason})`);
+  lines.push('');
+  c.choices.forEach((ch, i) => {
+    const voters = (c.responses[ch.id] || [])
+      .map((pid) => huddle.participants.find((p) => p.id === pid)?.name)
+      .filter(Boolean);
+    lines.push(`${i + 1}. ${ch.label}${voters.length ? ` — ${voters.join(', ')}` : ''}`);
+  });
+  lines.push('', 'Tap a button, or reply with the number.');
+  return lines.join('\n');
+}
+
+/** One action carrying all three renderings: rich `card`, `buttons`, and text. */
+function cardAction(huddle) {
+  return { text: cardText(huddle), buttons: cardButtons(huddle), card: huddle.card };
+}
+
+// ------------------------------------------------ booking render helpers
+
+/** Pick which option a /book or /split refers to: explicit n, else the locked
+ *  one, else the current vote leader, else the top-ranked option. */
+function pickOption(huddle, rest) {
+  const n = rest.trim().match(/^([123])$/);
+  if (n) return huddle.options[Number(n[1]) - 1] || null;
+  if (huddle.lockedOptionId) {
+    const locked = huddle.options.find((o) => o.id === huddle.lockedOptionId);
+    if (locked) return locked;
+  }
+  const counts = huddle.options.map((o) => (huddle.votes[o.id] || []).length);
+  const top = Math.max(...counts, 0);
+  if (top > 0) return huddle.options[counts.indexOf(top)];
+  return huddle.options[0] || null;
+}
+
+function reservationText(huddle) {
+  const r = huddle.reservation;
+  const confirmed = r.status === 'confirmed'; // only when a real hold returned a ref
+  const lines = confirmed
+    ? [`✓ Held: ${r.venueName} — party of ${r.partySize}, ${r.date} ${r.time}. Confirmation ${r.ref}.`]
+    : [
+        `Reservation link for ${r.venueName} — party of ${r.partySize}, ${r.date} ${r.time}:`,
+        `   ${r.url}`,
+        `   (I haven't confirmed this booking — tap through to finish it.)`,
+      ];
+  const option = huddle.options.find((o) => o.id === r.optionId);
+  const calendar = option?.links.find((l) => l.kind === 'calendar');
+  if (calendar) lines.push(`   Calendar: ${calendar.url}`);
+  return lines.join('\n');
+}
+
+function splitText(huddle) {
+  const s = huddle.billSplit;
+  // Green "we did the math" style: the leading ✓ marks a computed claim, the
+  // same convention optionsText uses for computed accommodations.
+  const lines = [
+    `✓ $${s.perPerson}/person — party of ${s.count}, ~$${s.total} total. (Our arithmetic.)`,
+  ];
+  for (const l of s.requestLinks) lines.push(`   ${l.label}: ${l.url}`);
+  if (!s.requestLinks.length) lines.push(`   (No request link — set HUDDLE_SPLIT_PROVIDER to venmo.)`);
+  return lines.join('\n');
+}
+
 // ---------------------------------------------------------------- commands
+
+async function cmdPoll(evt, rest) {
+  const huddle = findHuddleByChat(evt.platform, evt.chatId);
+  if (!huddle) return { text: 'Start a plan first with /plan <what> in <city>.' };
+  // "/poll Which day? | Friday | Saturday"
+  const parts = rest.split('|').map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 3) {
+    return { text: 'Usage: /poll Question? | Choice A | Choice B [| Choice C]' };
+  }
+  const [question, ...choices] = parts;
+  huddle.card = makeCard({ type: 'poll', question, choices: choices.slice(0, 5) });
+  saveHuddle(huddle);
+  return cardAction(huddle);
+}
+
+async function cmdBook(evt, rest) {
+  const huddle = findHuddleByChat(evt.platform, evt.chatId);
+  if (!huddle) return { text: 'Nothing being planned here.' };
+  if (!huddle.options.length) return { text: 'No options yet — run /go first.' };
+  const option = pickOption(huddle, rest);
+  if (!option) return { text: 'Which one? Try /book 1' };
+
+  const consensus = buildConsensus(huddle);
+  huddle.reservation = await book(option, {
+    partySize: consensus.partySize,
+    date: option.slot.date,
+    time: option.slot.start,
+  });
+  huddle.lockedOptionId = option.id;
+  saveHuddle(huddle);
+  return { text: reservationText(huddle) };
+}
+
+async function cmdSplit(evt, rest) {
+  const huddle = findHuddleByChat(evt.platform, evt.chatId);
+  if (!huddle) return { text: 'Nothing being planned here.' };
+  if (!huddle.options.length) return { text: 'No options yet — run /go first.' };
+  const option = pickOption(huddle, rest);
+  if (!option) return { text: 'Which one? Try /split 1' };
+
+  const consensus = buildConsensus(huddle);
+  huddle.billSplit = billSplitFor(option, consensus.partySize);
+  saveHuddle(huddle);
+  return { text: splitText(huddle) };
+}
 
 async function cmdPlan(evt, argstring) {
   const existing = findHuddleByChat(evt.platform, evt.chatId);
@@ -298,6 +443,27 @@ export function handleVote({ platform, chatId, userId, userName, optionId }) {
   return { text: tallyText(huddle) };
 }
 
+/** A tap on an interactive-card choice (Telegram/Discord), or a numbered reply
+ *  on a platform without buttons. Mutates card state, re-renders. */
+export function handleCardResponse({ platform, chatId, userId, userName, cardId, choiceId }) {
+  const huddle = findHuddleByChat(platform, chatId);
+  if (!huddle || !huddle.card || huddle.card.id !== cardId) {
+    return { text: 'That poll is no longer open.' };
+  }
+  const card = huddle.card;
+  if (!card.choices.some((ch) => ch.id === choiceId)) return { text: 'That choice is gone.' };
+
+  const participant = ensureParticipant(huddle, { platform, userId, userName });
+  // One response each: clear any prior pick, then set the new one.
+  for (const arr of Object.values(card.responses)) {
+    const at = arr.indexOf(participant.id);
+    if (at !== -1) arr.splice(at, 1);
+  }
+  (card.responses[choiceId] ||= []).push(participant.id);
+  saveHuddle(huddle);
+  return cardAction(huddle);
+}
+
 /**
  * Answer a question addressed to the bot.
  *
@@ -348,6 +514,12 @@ export async function handleEvent(evt) {
       case 'cancel':
       case 'stop':
         return cmdCancel(evt);
+      case 'poll':
+        return cmdPoll(evt, rest);
+      case 'book':
+        return cmdBook(evt, rest);
+      case 'split':
+        return cmdSplit(evt, rest);
       case 'usage':
       case 'cost':
         return { text: formatUsage(MODEL) };
@@ -374,6 +546,26 @@ export async function handleEvent(evt) {
 
   const huddle = findHuddleByChat(evt.platform, evt.chatId);
   if (!huddle) return SILENT; // no active plan: stay completely quiet
+
+  // ---- interactive-card response by plain text (iMessage / no-button degrade)
+  // A card is the most recent human choice, so it takes precedence over an
+  // option vote when both are somehow live.
+  if (huddle.card) {
+    const pick = text.match(/^([1-9])$/);
+    if (pick) {
+      const choice = huddle.card.choices[Number(pick[1]) - 1];
+      if (choice) {
+        return handleCardResponse({
+          platform: evt.platform,
+          chatId: evt.chatId,
+          userId: evt.userId,
+          userName: evt.userName,
+          cardId: huddle.card.id,
+          choiceId: choice.id,
+        });
+      }
+    }
+  }
 
   // ---- voting by plain text, for platforms without buttons ----
   if (huddle.options.length) {
@@ -418,17 +610,34 @@ export async function handleEvent(evt) {
   }
 
   const learned = fingerprint(participant.prefs) !== before;
+  let reservationWentStale = false;
   if (learned) {
-    // Someone's constraints changed, so any computed plan is now stale.
+    // Someone's constraints changed, so any computed state is now stale. The
+    // card (a human choice built ON those constraints) is cleared like options
+    // and votes; the reservation is a real commitment, so it's flagged and
+    // warned, never silently deleted.
     huddle.options = [];
     huddle.votes = {};
     huddle.lockedOptionId = null;
+    huddle.card = null;
+    if (huddle.reservation && !huddle.reservation.stale) {
+      huddle.reservation.stale = true;
+      reservationWentStale = true;
+    }
   }
   saveHuddle(huddle);
+
+  if (reservationWentStale) {
+    return {
+      text:
+        `Heads up — a new constraint just landed after the ${huddle.reservation.venueName} booking. ` +
+        `That reservation may no longer fit; re-run /go and /book if it matters.`,
+    };
+  }
 
   // Group etiquette: acknowledge with a reaction, never a message. A bot that
   // replies to every line is the thing this product exists to eliminate.
   return learned ? { react: '✅' } : SILENT;
 }
 
-export { HELP, optionsText, statusText, PUBLIC_URL };
+export { HELP, optionsText, statusText, PUBLIC_URL, cardAction, reservationText, splitText };

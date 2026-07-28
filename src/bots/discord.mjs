@@ -125,15 +125,22 @@ export async function startDiscord() {
   client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
     try {
-      const [, , optionId] = interaction.customId.split(':');
-      const action = handleVote({
+      const who = {
         platform: 'discord',
         chatId: interaction.channelId,
         userId: interaction.user.id,
         userName: interaction.member?.displayName || interaction.user.globalName || interaction.user.username,
-        optionId,
-      });
-      await interaction.reply({ content: action.text, allowedMentions: { parse: [] } });
+      };
+      const parts = interaction.customId.split(':'); // vote:hid:optId | card:hid:cardId:choiceId
+      const action =
+        parts[0] === 'card'
+          ? handleCardResponse({ ...who, cardId: parts[2], choiceId: parts[3] })
+          : handleVote({ ...who, optionId: parts[2] });
+      // Re-render in place with the fresh tally. A card response carries its
+      // own buttons; a vote doesn't, so keep the message's existing controls
+      // rather than stripping them.
+      const components = action.buttons?.length ? rows(action.buttons) : interaction.message.components;
+      await interaction.update({ content: action.text, components });
     } catch (err) {
       console.error('[discord] interaction failed:', err.message);
     }
