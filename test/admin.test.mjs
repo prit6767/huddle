@@ -7,7 +7,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { handleAdmin, adminStats } from '../workers/admin.mjs';
 
 const SCHEMA = readFileSync(new URL('../workers/schema.sql', import.meta.url), 'utf8');
-const TOKEN = 'secret-admin';
+const USER = 'admin';
+const PASS = 'secret-pass';
+const basic = (u, p) => 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64');
 
 function d1Shim() {
   const sql = new DatabaseSync(':memory:');
@@ -41,29 +43,34 @@ function seed(db) {
 
 let env;
 beforeEach(() => {
-  env = { DB: d1Shim(), HUDDLE_ADMIN_TOKEN: TOKEN };
+  env = { DB: d1Shim(), HUDDLE_ADMIN_USER: USER, HUDDLE_ADMIN_PASS: PASS };
   seed(env.DB);
 });
 
-const req = (token) => new Request(`https://huddle-hq.com/api/admin/stats${token ? `?token=${token}` : ''}`);
+const req = (auth) =>
+  new Request('https://huddle-hq.com/api/admin/stats', auth ? { headers: { authorization: auth } } : {});
 
 describe('admin auth', () => {
-  test('no token is 401', async () => {
-    assert.equal((await handleAdmin(req(), env)).status, 401);
+  test('no credentials is 401 with a Basic challenge', async () => {
+    const res = await handleAdmin(req(), env);
+    assert.equal(res.status, 401);
+    assert.match(res.headers.get('www-authenticate') || '', /Basic/);
   });
-  test('wrong token is 401', async () => {
-    assert.equal((await handleAdmin(req('nope'), env)).status, 401);
+  test('wrong password is 401', async () => {
+    assert.equal((await handleAdmin(req(basic(USER, 'wrong')), env)).status, 401);
   });
-  test('right token is 200', async () => {
-    assert.equal((await handleAdmin(req(TOKEN), env)).status, 200);
+  test('wrong username is 401', async () => {
+    assert.equal((await handleAdmin(req(basic('nope', PASS)), env)).status, 401);
   });
-  test('unset admin token -> 404 (dormant)', async () => {
-    const res = await handleAdmin(req('anything'), { DB: env.DB });
+  test('correct username + password is 200', async () => {
+    assert.equal((await handleAdmin(req(basic(USER, PASS)), env)).status, 200);
+  });
+  test('unset credentials -> 404 (dormant)', async () => {
+    const res = await handleAdmin(req(basic(USER, PASS)), { DB: env.DB });
     assert.equal(res.status, 404);
   });
-  test('bearer header also works', async () => {
-    const r = new Request('https://huddle-hq.com/api/admin/stats', { headers: { authorization: `Bearer ${TOKEN}` } });
-    assert.equal((await handleAdmin(r, env)).status, 200);
+  test('a bare token in the header is rejected (Basic only)', async () => {
+    assert.equal((await handleAdmin(req(`Bearer ${PASS}`), env)).status, 401);
   });
 });
 

@@ -9,16 +9,38 @@
 // Gated behind HUDDLE_ADMIN_TOKEN: this is your data, never public. Unset ->
 // the endpoint 404s (dormant); wrong token -> 401.
 
+import { timingSafeEqual } from 'node:crypto';
+
 export function adminConfigured(env) {
-  return Boolean(env.HUDDLE_ADMIN_TOKEN);
+  return Boolean(env.HUDDLE_ADMIN_USER && env.HUDDLE_ADMIN_PASS);
 }
 
+function safeEqual(a, b) {
+  const x = Buffer.from(String(a ?? ''));
+  const y = Buffer.from(String(b ?? ''));
+  if (x.length !== y.length) return false;
+  return timingSafeEqual(x, y);
+}
+
+/** Verify HTTP Basic credentials against the configured admin user/password. */
 function authorized(request, env) {
-  const url = new URL(request.url);
-  const t =
-    url.searchParams.get('token') ||
-    (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  return Boolean(env.HUDDLE_ADMIN_TOKEN) && t.length > 0 && t === env.HUDDLE_ADMIN_TOKEN;
+  if (!adminConfigured(env)) return false;
+  const h = request.headers.get('authorization') || '';
+  if (!/^Basic\s+/i.test(h)) return false;
+  let user = '';
+  let pass = '';
+  try {
+    const decoded = atob(h.replace(/^Basic\s+/i, ''));
+    const i = decoded.indexOf(':');
+    user = decoded.slice(0, i);
+    pass = decoded.slice(i + 1);
+  } catch {
+    return false;
+  }
+  // Evaluate both so a mismatch on the username can't short-circuit the timing.
+  const okUser = safeEqual(user, env.HUDDLE_ADMIN_USER);
+  const okPass = safeEqual(pass, env.HUDDLE_ADMIN_PASS);
+  return okUser && okPass;
 }
 
 // chat_key looks like "slack:T:C", "google:spaces/x", "telegram:123", "web:ip".
@@ -69,9 +91,16 @@ export async function adminStats(env) {
 
 export async function handleAdmin(request, env) {
   if (!adminConfigured(env)) return new Response('Not configured', { status: 404 });
-  const json = (b, s = 200) =>
-    new Response(JSON.stringify(b), { status: s, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
-  if (!authorized(request, env)) return json({ error: 'unauthorized' }, 401);
+  const json = (b, s = 200, headers = {}) =>
+    new Response(JSON.stringify(b), {
+      status: s,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...headers },
+    });
+  if (!authorized(request, env)) {
+    // Prompt the browser's native Basic-auth dialog too, so /admin works even
+    // without the custom login form.
+    return json({ error: 'unauthorized' }, 401, { 'www-authenticate': 'Basic realm="Huddle Admin"' });
+  }
   try {
     return json(await adminStats(env));
   } catch (err) {

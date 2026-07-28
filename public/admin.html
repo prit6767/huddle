@@ -43,9 +43,10 @@
     <div class="wrap">
       <div id="gate" class="gate" hidden>
         <h1><span class="brand-mark">◍</span> Huddle Admin</h1>
-        <p class="muted">Enter your admin token.</p>
-        <input id="token" type="password" placeholder="admin token" />
-        <div><button id="go">View analytics</button></div>
+        <p class="muted">Sign in.</p>
+        <input id="user" type="text" placeholder="username" autocomplete="username" />
+        <input id="pass" type="password" placeholder="password" autocomplete="current-password" />
+        <div><button id="go">Sign in</button></div>
         <p id="gerr" class="err" hidden></p>
       </div>
 
@@ -75,7 +76,7 @@
 
     <script>
       const $ = (s) => document.querySelector(s);
-      const KEY = 'huddle:admin:token';
+      const KEY = 'huddle:admin:auth'; // base64(user:pass), session-scoped
       const num = (n) => (n ?? 0).toLocaleString();
 
       function showGate(msg) {
@@ -84,16 +85,23 @@
         if (msg) { $('#gerr').textContent = msg; $('#gerr').hidden = false; }
       }
 
-      async function load(token) {
+      async function load(basic) {
         try {
-          const res = await fetch('/api/admin/stats?token=' + encodeURIComponent(token));
-          if (res.status === 401) { localStorage.removeItem(KEY); return showGate('Wrong token.'); }
-          if (res.status === 404) return showGate('Admin isn’t enabled (set HUDDLE_ADMIN_TOKEN).');
+          const res = await fetch('/api/admin/stats', { headers: { authorization: 'Basic ' + basic } });
+          if (res.status === 401) { sessionStorage.removeItem(KEY); return showGate('Wrong username or password.'); }
+          if (res.status === 404) return showGate('Admin isn’t enabled (set HUDDLE_ADMIN_USER and HUDDLE_ADMIN_PASS).');
           if (!res.ok) return showGate('Error ' + res.status);
           const d = await res.json();
-          localStorage.setItem(KEY, token);
+          sessionStorage.setItem(KEY, basic);
           render(d);
         } catch (e) { showGate(e.message); }
+      }
+
+      function signIn() {
+        const u = $('#user').value.trim();
+        const p = $('#pass').value;
+        if (!u || !p) return showGate('Enter a username and password.');
+        load(btoa(u + ':' + p));
       }
 
       function render(d) {
@@ -123,11 +131,11 @@
         ).join('') || '<tr><td class="muted" colspan="2">No Slack installs yet.</td></tr>';
       }
 
-      $('#go').addEventListener('click', () => load($('#token').value.trim()));
-      $('#token').addEventListener('keydown', (e) => { if (e.key === 'Enter') load($('#token').value.trim()); });
-      $('#refresh').addEventListener('click', () => load(localStorage.getItem(KEY)));
+      $('#go').addEventListener('click', signIn);
+      $('#pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') signIn(); });
+      $('#refresh').addEventListener('click', () => load(sessionStorage.getItem(KEY)));
 
-      const saved = localStorage.getItem(KEY);
+      const saved = sessionStorage.getItem(KEY);
       if (saved) load(saved); else showGate();
     </script>
   </body>
