@@ -23,3 +23,29 @@ CREATE TABLE IF NOT EXISTS installs (
   bot_user_id  TEXT,
   installed_at TEXT NOT NULL
 );
+
+-- Rolling per-chat context for the bot's Q&A. In the Node build this lives in
+-- memory; Workers isolates are ephemeral, so on Cloudflare it has to be durable.
+-- One row per chat, the recent messages as a JSON array, trimmed on write.
+-- These are other people's messages, so the row is bounded and disposable.
+CREATE TABLE IF NOT EXISTS chatlog (
+  chat_key   TEXT PRIMARY KEY,   -- "slack:<team>:<channel>"
+  messages   TEXT NOT NULL,      -- JSON: [{name, text, at}]
+  updated_at TEXT NOT NULL
+);
+
+-- Per-chat daily question counter — the spend guardrail, durable across
+-- isolates. (day, chat_key) so a new UTC day starts everyone fresh.
+CREATE TABLE IF NOT EXISTS usage (
+  day       TEXT NOT NULL,
+  chat_key  TEXT NOT NULL,
+  used      INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, chat_key)
+);
+
+-- Slack retries an unacknowledged event; a retry that re-answers costs money.
+-- A short-lived seen-events table dedupes them across isolates.
+CREATE TABLE IF NOT EXISTS seen_events (
+  event_id TEXT PRIMARY KEY,
+  seen_at  TEXT NOT NULL
+);

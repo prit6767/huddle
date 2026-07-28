@@ -8,7 +8,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 
-import { verifySlackSignature } from '../src/slack-http.mjs';
+import { verifySlackSignature } from '../src/slack-verify.mjs';
 
 const SECRET = 'test_signing_secret';
 const now = () => Math.floor(Date.now() / 1000);

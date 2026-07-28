@@ -19,6 +19,7 @@ import { shareLine } from '../src/links.mjs';
 import { llmAvailable, MODEL } from '../src/llm.mjs';
 import { todayStr, addDays, datesInWindow } from '../src/timeutil.mjs';
 import { GROUP_TYPES } from '../src/vocab.mjs';
+import { handleSlack, slackInstallUrl } from './slack.mjs';
 
 setCatalog(venues.venues);
 
@@ -98,7 +99,7 @@ async function renderHuddlePage(html, huddle, publicUrl) {
 }
 
 // --------------------------------------------------------------- the app
-export async function handle(request, env) {
+export async function handle(request, env, ctx) {
   // Bridge bindings into process.env so the shared modules — which read
   // process.env for the API key, model and feature flags — work unchanged.
   for (const [k, v] of Object.entries(env)) {
@@ -108,6 +109,11 @@ export async function handle(request, env) {
   const db = store(env.DB);
   const url = new URL(request.url);
   const path = url.pathname;
+
+  // Slack owns these paths (configured in its app manifest, not by us).
+  if (path.startsWith('/slack/')) {
+    return handleSlack(request, env, ctx, PUBLIC_URL);
+  }
   const body = async () => {
     try {
       return await request.json();
@@ -152,7 +158,7 @@ export async function handle(request, env) {
       invites: {
         telegram: env.HUDDLE_TELEGRAM_INVITE || null,
         discord: env.HUDDLE_DISCORD_INVITE || null,
-        slack: env.SLACK_CLIENT_ID ? `${PUBLIC_URL}/slack/install` : env.HUDDLE_SLACK_INVITE || null,
+        slack: slackInstallUrl(env, PUBLIC_URL) || env.HUDDLE_SLACK_INVITE || null,
       },
     });
   }
@@ -273,7 +279,7 @@ export async function handle(request, env) {
 export default {
   async fetch(request, env, ctx) {
     try {
-      return await handle(request, env);
+      return await handle(request, env, ctx);
     } catch (err) {
       console.error('[worker]', err?.stack || err?.message || err);
       return fail(500, 'Something broke on our side.');

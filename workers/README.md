@@ -60,7 +60,52 @@ confirmed on Cloudflare itself:
    at the edge. `/api/health` returning `huddles` and a `/plan` producing options
    confirms it loaded.
 
-## Stage 3 — Slack + Telegram webhooks on Workers
+## Slack on Workers (live)
+
+The bot's install flow and Q&A now run on the Worker itself — no separate
+process. `GET /slack/install` → consent, `GET /slack/oauth/callback` → stores
+the workspace token in D1, `POST /slack/events` → verified events; it reads the
+channel for context and answers @mentions with web-searched, sourced replies.
+
+Context, the daily cap, event-dedup and install tokens all live in D1 (Workers
+isolates are ephemeral, so the Node build's in-memory state won't do). Slack is
+acknowledged inside its 3-second window and the web search runs in
+`ctx.waitUntil` after, so a retry never double-charges.
+
+**Turn it on:**
+
+1. Apply the new tables (idempotent — safe to re-run):
+   ```bash
+   cd workers && wrangler d1 execute huddle --file schema.sql --remote
+   ```
+2. Create the Slack app at [api.slack.com/apps](https://api.slack.com/apps):
+   - **OAuth & Permissions** → Redirect URL: `https://huddle-hq.com/slack/oauth/callback`
+   - Bot Token Scopes: `app_mentions:read`, `channels:history`, `groups:history`,
+     `im:history`, `chat:write`, `reactions:write`, `channels:read`, `groups:read`, `users:read`
+   - **Event Subscriptions** → Request URL: `https://huddle-hq.com/slack/events`
+     → subscribe to bot events: `app_mention`, `message.channels`, `message.groups`, `message.im`
+   - **Basic Information** → copy the Signing Secret; **Install App** → note the Client ID/Secret
+3. Set the secrets and redeploy:
+   ```bash
+   wrangler secret put SLACK_CLIENT_ID
+   wrangler secret put SLACK_CLIENT_SECRET
+   wrangler secret put SLACK_SIGNING_SECRET
+   wrangler deploy
+   ```
+
+The landing page then shows an **Add to Slack** button, and any workspace can
+install with one click — no tokens to copy. Verified by unit tests
+(`slack-worker`, `slack-http` suites); the live round-trip needs the app above.
+
+## Next platforms for companies
+
+- **Microsoft Teams** — Bot Framework, HTTPS messaging endpoint. Biggest
+  enterprise install base; the heaviest adapter (auth + Activity protocol).
+- **Google Chat** — Workspace apps, webhook-based and lighter than Teams.
+
+Both are additive and map onto the same `ask()` + D1-context path Slack uses.
+
+## Stage — Telegram webhook + planning over Slack
 
 The Node build's `src/slack-http.mjs` is already webhook-shaped (HMAC-verified
 `/slack/events`, OAuth install), but it's written against Node's `req/res` and

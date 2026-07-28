@@ -18,10 +18,13 @@
 //   SLACK_CLIENT_ID=...
 //   SLACK_CLIENT_SECRET=...
 //   SLACK_SIGNING_SECRET=...
-import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 
 import { handleEvent, handleVote } from './bots/bridge.mjs';
 import { saveInstall, getInstall } from './installs.mjs';
+import { verifySlackSignature } from './slack-verify.mjs';
+
+export { verifySlackSignature };
 
 const SCOPES = [
   'app_mentions:read',
@@ -50,30 +53,6 @@ export function installUrl(publicUrl) {
 }
 
 // ------------------------------------------------------------------ security
-
-/**
- * Verify a request genuinely came from Slack.
- *
- * Two independent checks, and both matter: the HMAC proves the body was signed
- * with our secret, and the timestamp window stops a valid captured request
- * being replayed later. Compared in constant time — a fast-exit compare leaks
- * the signature a byte at a time.
- */
-export function verifySlackSignature({ signingSecret, timestamp, signature, rawBody }) {
-  if (!signingSecret || !timestamp || !signature) return false;
-
-  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
-  if (!Number.isFinite(age) || age > 60 * 5) return false;
-
-  const expected = `v0=${createHmac('sha256', signingSecret)
-    .update(`v0:${timestamp}:${rawBody}`)
-    .digest('hex')}`;
-
-  const a = Buffer.from(expected, 'utf8');
-  const b = Buffer.from(signature, 'utf8');
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
 
 // Slack retries an event it thinks we missed, and a retry that re-answers a
 // question costs real money. Bounded, in memory: a duplicate arriving after a
