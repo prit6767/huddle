@@ -747,6 +747,16 @@ select:focus {
   color: var(--ink-muted);
   margin: 0;
 }
+/* CTA button inside a platform/surface card */
+.feature .card-cta {
+  margin-top: var(--s4);
+  display: inline-flex;
+}
+/* the embed snippet must wrap inside the amber note, not overflow the page */
+.friction code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .platform header {
   display: flex;
   align-items: center;
