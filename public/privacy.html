@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — Huddle</title>
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .legal {
+        max-width: 44rem;
+        margin: 0 auto;
+        padding: clamp(24px, 6vw, 72px) var(--s5, 20px) 96px;
+      }
+      .legal h1 {
+        font-size: clamp(28px, 5vw, 40px);
+        margin-bottom: 6px;
+      }
+      .legal .updated {
+        color: var(--ink-muted);
+        margin-bottom: 40px;
+      }
+      .legal h2 {
+        font-size: 20px;
+        margin: 36px 0 10px;
+      }
+      .legal p,
+      .legal li {
+        color: var(--ink-muted);
+        line-height: 1.65;
+      }
+      .legal ul {
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .legal a {
+        color: var(--coral);
+      }
+      .legal .back {
+        display: inline-block;
+        margin-top: 40px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="legal">
+      <h1><span class="brand-mark" aria-hidden="true">◍</span> Huddle — Privacy Policy</h1>
+      <p class="updated">Last updated: 28 July 2026</p>
+
+      <p>
+        Huddle is an AI assistant you add to a group chat (Slack, Google Chat, and others). You
+        address it, it answers — searching the web when the answer depends on current information.
+        This policy explains, in plain terms, what it does with your data. It is written to reflect
+        how the software actually behaves.
+      </p>
+
+      <h2>What Huddle processes</h2>
+      <ul>
+        <li>
+          <b>Messages you address to it.</b> When you @mention Huddle or message it directly, the
+          text of that message — and a short window of recent channel messages, for context — is
+          sent to <b>Anthropic</b> (the maker of Claude) to generate an answer, and may be used to
+          perform web searches. Huddle only answers messages that are addressed to it.
+        </li>
+        <li>
+          <b>Short-term context.</b> To follow a conversation, Huddle keeps a small, bounded buffer
+          of the most recent messages (about 20) in a channel where it is used, stored in
+          Cloudflare D1. It is used only to give your questions context and is continuously
+          overwritten as new messages arrive.
+        </li>
+        <li>
+          <b>Planning data.</b> If you use the planning feature, the preferences and options for
+          that plan are stored so your group can view and vote on them.
+        </li>
+        <li>
+          <b>Workspace connection.</b> For each workspace that installs Huddle, an access token is
+          stored so the bot can post replies. It is kept separately from any content and is never
+          exposed publicly.
+        </li>
+      </ul>
+
+      <h2>Who your data is shared with</h2>
+      <ul>
+        <li>
+          <b>Anthropic</b> — message text is sent to Anthropic's API to generate answers and power
+          web search. See
+          <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer"
+            >Anthropic's privacy policy</a
+          >.
+        </li>
+        <li>
+          <b>Cloudflare</b> — Huddle runs on Cloudflare Workers and stores its limited data in
+          Cloudflare D1.
+        </li>
+        <li>
+          <b>No one else.</b> Huddle does not sell your data, share it with advertisers, or use it
+          to build profiles of you.
+        </li>
+      </ul>
+
+      <h2>What Huddle does not do</h2>
+      <ul>
+        <li>It does not process messages you don't address to it, beyond the short context buffer.</li>
+        <li>It does not retain your messages long-term or use them to train models.</li>
+        <li>It invents nothing — no ratings, reviews, or claims it can't attribute to a source.</li>
+      </ul>
+
+      <h2>Retention &amp; deletion</h2>
+      <p>
+        The context buffer is small and continuously overwritten, so old messages age out on their
+        own. Removing Huddle from your workspace stops all processing for that workspace. To request
+        deletion of any stored data, contact us at the address below.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions or data requests: see the
+        <a href="/support.html">support page</a>. Huddle is open source —
+        <a href="https://github.com/prit6767/huddle" target="_blank" rel="noopener noreferrer"
+          >the code is public</a
+        >, so you can verify exactly what it does.
+      </p>
+
+      <a class="back" href="/">← Back to Huddle</a>
+    </main>
+  </body>
+</html>

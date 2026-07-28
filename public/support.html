@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Support — Huddle</title>
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .legal {
+        max-width: 44rem;
+        margin: 0 auto;
+        padding: clamp(24px, 6vw, 72px) var(--s5, 20px) 96px;
+      }
+      .legal h1 {
+        font-size: clamp(28px, 5vw, 40px);
+        margin-bottom: 24px;
+      }
+      .legal h2 {
+        font-size: 20px;
+        margin: 32px 0 10px;
+      }
+      .legal p,
+      .legal li {
+        color: var(--ink-muted);
+        line-height: 1.65;
+      }
+      .legal ul {
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .legal code {
+        background: var(--surface-sunk);
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+      .legal a {
+        color: var(--coral);
+      }
+      .legal .back {
+        display: inline-block;
+        margin-top: 40px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="legal">
+      <h1><span class="brand-mark" aria-hidden="true">◍</span> Huddle — Support</h1>
+
+      <p>
+        Huddle is an AI that lives in your group chat. Add it, @mention it with a question, and it
+        answers — searching the web for anything current, so it's useful for settling a debate.
+      </p>
+
+      <h2>Using it</h2>
+      <ul>
+        <li>Invite it to a channel, then <b>@mention</b> it (or DM it) with your question.</li>
+        <li>It reads the channel for context but only replies when you address it.</li>
+        <li>It answers in a sentence or two, with source links when it searched the web.</li>
+      </ul>
+
+      <h2>Get help</h2>
+      <ul>
+        <li>
+          <b>Report a bug or ask a question:</b>
+          <a href="https://github.com/prit6767/huddle/issues" target="_blank" rel="noopener noreferrer"
+            >open an issue on GitHub</a
+          >.
+        </li>
+        <li>
+          <b>Email:</b> reach the maintainer at
+          <a href="mailto:pritamavuthu2010@gmail.com">pritamavuthu2010@gmail.com</a>.
+        </li>
+        <li>
+          <b>See how it works:</b> Huddle is open source —
+          <a href="https://github.com/prit6767/huddle" target="_blank" rel="noopener noreferrer"
+            >read the code</a
+          >.
+        </li>
+      </ul>
+
+      <h2>Privacy</h2>
+      <p>
+        What Huddle does with your data is described on the
+        <a href="/privacy.html">privacy policy</a> page. In short: it processes only the messages
+        you address to it, keeps a small rolling context buffer, sends message text to Anthropic to
+        generate answers, and never sells your data.
+      </p>
+
+      <a class="back" href="/">← Back to Huddle</a>
+    </main>
+  </body>
+</html>
