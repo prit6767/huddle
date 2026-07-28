@@ -24,7 +24,11 @@
   // only runs for routes the assets don't cover.
   "assets": {
     "directory": "../public",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // Route only the homepage through the Worker so it can inject rel=canonical
+    // / og:url on the real origin. Everything else (css, js, og.png) still
+    // serves straight from the edge as a static asset.
+    "run_worker_first": ["/"]
   },
 
   "d1_databases": [

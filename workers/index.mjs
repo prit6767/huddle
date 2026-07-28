@@ -116,6 +116,18 @@ export async function handle(request, env) {
     }
   };
 
+  // ---- homepage: inject rel=canonical / og:url on the real origin ----
+  // The asset layer would serve index.html directly and skip this; wrangler's
+  // run_worker_first:["/"] routes just the root through here so the canonical
+  // tag is correct. Assets (css, js, og.png) still serve straight from edge.
+  if (request.method === 'GET' && (path === '/' || path === '/index.html')) {
+    const asset = await env.ASSETS.fetch(new Request(new URL('/index.html', url)));
+    const html = await asset.text();
+    return new Response(withCanonical(html, '/', PUBLIC_URL), {
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    });
+  }
+
   // ---- link-preview pages: /h/:id — served with per-huddle OG tags ----
   const share = path.match(/^\/h\/([\w-]+)\/?$/);
   if (request.method === 'GET' && share) {
