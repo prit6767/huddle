@@ -22,6 +22,8 @@ import { GROUP_TYPES } from '../src/vocab.mjs';
 import { handleSlack, slackInstallUrl } from './slack.mjs';
 import { handleGoogleChat } from './google-chat.mjs';
 import { handleTelegram } from './telegram.mjs';
+import { ask, formatAnswer } from '../src/assistant.mjs';
+import { claimQuestion } from './chat-state.mjs';
 
 setCatalog(venues.venues);
 
@@ -154,6 +156,24 @@ export async function handle(request, env, ctx) {
       ? await renderHuddlePage(html, huddle, PUBLIC_URL)
       : withCanonical(html, '/', PUBLIC_URL);
     return new Response(out, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+  }
+
+  // ---- direct Q&A, for the web "Ask Huddle" page and the Meet side panel ----
+  if (path === '/api/ask' && request.method === 'POST') {
+    const b = await body();
+    const question = String(b.question || '').trim().slice(0, 2000);
+    if (!question) return fail(400, 'Ask a question.');
+    // Bound cost: this endpoint is effectively public, so cap it per client IP
+    // per day (on top of the model's own caps). A shared NAT hits the limit
+    // sooner, which is the safe direction.
+    const ip = request.headers.get('cf-connecting-ip') || 'anon';
+    if (!(await claimQuestion(env.DB, `web:${ip}`, 40))) {
+      return fail(429, 'Daily question limit reached for now — try again tomorrow.');
+    }
+    // Optional short client-supplied context (prior turns on the page).
+    const context = String(b.context || '').slice(0, 4000);
+    const answer = await ask({ question, context, platform: 'web', chatId: `web:${ip}` });
+    return json({ text: answer.text, sources: answer.sources, formatted: formatAnswer(answer) });
   }
 
   // ---- API ----
