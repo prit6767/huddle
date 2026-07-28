@@ -1,0 +1,54 @@
+# Slack app manifest for Huddle (Workers deployment on huddle-hq.com).
+#
+# Fastest setup: api.slack.com/apps -> Create New App -> From an app manifest
+# -> pick your workspace -> paste this -> Create. It pre-fills every scope,
+# the redirect URL, and the event subscriptions, so there's nothing to click
+# through by hand.
+#
+# After creating, you still copy three values from the app settings and set them
+# as Worker secrets (they're secret, so you enter them, not the tooling):
+#   Basic Information -> App Credentials -> Client ID       -> SLACK_CLIENT_ID
+#   Basic Information -> App Credentials -> Client Secret   -> SLACK_CLIENT_SECRET
+#   Basic Information -> App Credentials -> Signing Secret  -> SLACK_SIGNING_SECRET
+#
+#   cd workers
+#   wrangler secret put SLACK_CLIENT_ID
+#   wrangler secret put SLACK_CLIENT_SECRET
+#   wrangler secret put SLACK_SIGNING_SECRET
+#   wrangler deploy
+#
+# Then the "Add to Slack" button appears on huddle-hq.com and any workspace can
+# install with one click.
+display_information:
+  name: Huddle
+  description: The AI in your group chat — settles arguments with real sources.
+  background_color: "#211d1a"
+features:
+  bot_user:
+    display_name: Huddle
+    always_online: true
+oauth_config:
+  redirect_urls:
+    - https://huddle-hq.com/slack/oauth/callback
+  scopes:
+    bot:
+      - app_mentions:read
+      - channels:history
+      - groups:history
+      - im:history
+      - chat:write
+      - reactions:write
+      - channels:read
+      - groups:read
+      - users:read
+settings:
+  event_subscriptions:
+    request_url: https://huddle-hq.com/slack/events
+    bot_events:
+      - app_mention
+      - message.channels
+      - message.groups
+      - message.im
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
