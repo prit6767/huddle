@@ -1342,3 +1342,149 @@ select:focus {
   max-width: 52rem;
   margin: 0 !important;
 }
+
+/* ============================================================ visual polish
+   Depth, motion, product mockups, and rhythm layered on the Warm Honesty base.
+   Everything here degrades under prefers-reduced-motion (block at the end). */
+
+/* --- ambient coral bloom behind the hero, for depth --- */
+.hero { position: relative; }
+.hero::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -10%;
+  right: -8%;
+  width: 62%;
+  height: 95%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--coral) 26%, transparent), transparent 70%);
+  filter: blur(20px);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+/* --- lift the chat demo off the page and let it breathe --- */
+.hero .phone {
+  box-shadow: 0 28px 64px -22px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.16);
+  animation: cardFloat 7s ease-in-out infinite;
+}
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+/* --- scroll reveal: sections rise into view --- */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* --- feature / platform cards: tactile, with a brand accent bar --- */
+.feature {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 44px -20px rgba(0, 0, 0, 0.42);
+  border-color: color-mix(in srgb, var(--coral) 45%, var(--hairline));
+}
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--coral-soft);
+  font-size: 24px;
+  margin-bottom: var(--s3);
+}
+#platforms .feature::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--accent, var(--coral));
+}
+#platforms .feature:nth-child(1) { --accent: #611f69; } /* Slack aubergine */
+#platforms .feature:nth-child(2) { --accent: var(--coral); }
+#platforms .feature:nth-child(3) { --accent: #2e6fb0; }
+#platforms .feature:nth-child(1) .feature-icon { background: color-mix(in srgb, #611f69 20%, transparent); }
+#platforms .feature:nth-child(3) .feature-icon { background: color-mix(in srgb, #2e6fb0 20%, transparent); }
+
+/* --- Slack channel mockup: show the product actually working --- */
+.slackmock {
+  max-width: 640px;
+  margin: var(--s4) auto 0;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  box-shadow: 0 20px 50px -24px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.slackmock-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--hairline);
+  font-weight: 700;
+}
+.slackmock-head .hash { color: var(--ink-faint); font-weight: 800; }
+.slackmock-body { padding: var(--s4); display: flex; flex-direction: column; gap: var(--s4); }
+.sm-msg { display: flex; gap: var(--s3); align-items: flex-start; }
+.sm-av {
+  flex: none;
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: grid; place-items: center;
+  color: #fff; font-weight: 800; font-size: 15px;
+}
+.sm-av.huddle { background: var(--coral); }
+.sm-body { line-height: 1.5; }
+.sm-body .sm-name { font-weight: 800; }
+.sm-body .sm-app {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+  background: var(--surface-sunk); color: var(--ink-faint);
+  padding: 1px 5px; border-radius: 4px; margin-left: 4px; vertical-align: middle;
+}
+.sm-body .sm-t { color: var(--ink-faint); font-size: 12px; margin-left: 6px; }
+.sm-answer {
+  margin-top: 4px;
+  background: var(--coral-soft);
+  border-left: 3px solid var(--coral);
+  border-radius: 0 10px 10px 0;
+  padding: 10px 12px;
+}
+.sm-src { margin-top: 6px; font-size: 13px; }
+.sm-src a, .sm-src span { color: var(--link); margin-right: 10px; text-decoration: underline; text-underline-offset: 2px; }
+
+/* --- section rhythm: a warm tint on alternating bands --- */
+.band.tint {
+  background: color-mix(in srgb, var(--surface-sunk) 55%, var(--bg));
+  border-radius: var(--r-card);
+  padding-left: clamp(var(--s4), 4vw, var(--s6));
+  padding-right: clamp(var(--s4), 4vw, var(--s6));
+  border-top: 0;
+}
+
+/* --- richer dark mode: a warm vertical wash instead of flat charcoal --- */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(178deg, #26211d 0%, var(--bg) 34%);
+    background-attachment: fixed;
+  }
+}
+
+/* --- gradient accent on the hero headline emphasis --- */
+.hero h1 em {
+  background: linear-gradient(120deg, var(--coral), color-mix(in srgb, var(--coral) 55%, #e8a33e));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero .phone { animation: none; }
+  .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+}

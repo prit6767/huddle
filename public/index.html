@@ -128,7 +128,7 @@
         </div>
 
         <!-- ------------------------- available on ------------------------ -->
-        <section class="band" id="platforms">
+        <section class="band reveal" id="platforms">
           <h2 class="band-title">Add it wherever your team talks</h2>
           <p class="band-sub">
             One click on Slack, open it on the web, or drop it into any site — and it runs on
@@ -172,7 +172,7 @@
         </section>
 
         <!-- ---------------------------- what it does --------------------- -->
-        <section class="band">
+        <section class="band reveal">
           <h2 class="band-title">What it actually does</h2>
           <div class="feature-grid">
             <article class="feature">
@@ -205,8 +205,49 @@
           </div>
         </section>
 
+        <!-- ------------------------ see it in action --------------------- -->
+        <section class="band tint reveal" id="in-action">
+          <h2 class="band-title">See it in your channel</h2>
+          <p class="band-sub">
+            @mention it and it answers with sources — reading the thread for context, silent
+            otherwise. Here it is settling one in a Slack channel:
+          </p>
+          <div class="slackmock">
+            <div class="slackmock-head"><span class="hash">#</span> team-general</div>
+            <div class="slackmock-body">
+              <div class="sm-msg">
+                <span class="sm-av" style="background: #e8912e">A</span>
+                <div class="sm-body">
+                  <span class="sm-name">Ana</span><span class="sm-t">10:42</span><br />
+                  wait is canberra really the capital of australia, not sydney?
+                </div>
+              </div>
+              <div class="sm-msg">
+                <span class="sm-av" style="background: #3a836b">M</span>
+                <div class="sm-body">
+                  <span class="sm-name">Marcus</span><span class="sm-t">10:42</span><br />
+                  @Huddle settle this
+                </div>
+              </div>
+              <div class="sm-msg">
+                <span class="sm-av huddle" aria-hidden="true">◍</span>
+                <div class="sm-body">
+                  <span class="sm-name">Huddle</span><span class="sm-app">APP</span
+                  ><span class="sm-t">10:42</span>
+                  <div class="sm-answer">
+                    Canberra is the capital — Sydney is the largest city, but not the capital.
+                    Canberra was purpose-built as the capital in 1913 to settle the
+                    Sydney–Melbourne rivalry.
+                    <div class="sm-src"><span>abc.net.au</span><span>britannica.com</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- ------------------------ honesty system ----------------------- -->
-        <section class="band" id="honesty">
+        <section class="band reveal" id="honesty">
           <h2 class="band-title">It tells you what it actually knows</h2>
           <p class="band-sub">
             Every line on a plan is labelled by where it came from. Solid green means
@@ -258,7 +299,7 @@
         </section>
 
         <!-- ---------------------------- add it --------------------------- -->
-        <section class="band" id="add">
+        <section class="band reveal" id="add">
           <h2 class="band-title">Add it to your chat</h2>
 
           <!-- ---- Path A: hosted bot. Shown only when this instance actually
@@ -467,7 +508,7 @@ ENABLE_IMESSAGE=1      npm run bots</code></pre>
         </section>
 
         <!-- ---------------------------- planner -------------------------- -->
-        <section class="band" id="planner">
+        <section class="band tint reveal" id="planner">
           <h2 class="band-title">Or plan something right here</h2>
           <p class="band-sub">
             No chat app needed. Start a plan, share the link, everyone drops their constraints.

@@ -66,6 +66,30 @@ function termLine(target, text, hot = false) {
   window.addEventListener('keydown', finish, { once: true });
 })();
 
+// Scroll reveal: fade sections up as they enter the viewport. Under reduced
+// motion the CSS already shows everything, so we just skip. If Intersection
+// Observer is missing, reveal everything immediately — content is never stuck.
+(function reveals() {
+  const els = document.querySelectorAll('.reveal');
+  if (!els.length) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+    els.forEach((el) => el.classList.add('in'));
+    return;
+  }
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      }
+    },
+    { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+  );
+  els.forEach((el) => io.observe(el));
+})();
+
 const QUICK_CHIPS = [
   'Free Saturday after 5, around $25',
   'Any evening this week, keep it cheap',
