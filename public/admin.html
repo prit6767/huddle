@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Huddle — Admin</title>
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      .sub { color: var(--ink-muted); margin: 0 0 28px; }
+      .gate { max-width: 380px; margin: 80px auto; text-align: center; }
+      .gate input {
+        width: 100%; padding: 12px 14px; margin: 12px 0;
+        border: 1px solid var(--hairline); border-radius: 12px;
+        background: var(--surface); color: var(--ink); font: inherit;
+      }
+      .gate button {
+        padding: 12px 20px; border: 0; border-radius: 12px;
+        background: var(--coral); color: #fff; font-weight: 700; cursor: pointer;
+      }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 32px; }
+      .card {
+        background: var(--surface); border: 1px solid var(--hairline);
+        border-radius: 16px; padding: 18px;
+      }
+      .card .n { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .card .l { color: var(--ink-muted); font-size: 13px; margin-top: 4px; }
+      h2 { font-size: 16px; margin: 28px 0 10px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--hairline); font-size: 14px; }
+      th { color: var(--ink-faint); font-weight: 600; }
+      td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .bar { height: 8px; background: var(--coral); border-radius: 4px; min-width: 2px; }
+      .muted { color: var(--ink-muted); }
+      .err { color: var(--coral-press); }
+      .refresh { float: right; font-size: 13px; cursor: pointer; color: var(--link); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div id="gate" class="gate" hidden>
+        <h1><span class="brand-mark">◍</span> Huddle Admin</h1>
+        <p class="muted">Enter your admin token.</p>
+        <input id="token" type="password" placeholder="admin token" />
+        <div><button id="go">View analytics</button></div>
+        <p id="gerr" class="err" hidden></p>
+      </div>
+
+      <div id="dash" hidden>
+        <span class="refresh" id="refresh">↻ refresh</span>
+        <h1><span class="brand-mark">◍</span> Huddle Admin</h1>
+        <p class="sub" id="asof"></p>
+
+        <div class="cards" id="cards"></div>
+
+        <h2>By platform</h2>
+        <table id="platforms"><thead><tr><th>Platform</th><th class="num">Active chats</th><th class="num">Questions</th></tr></thead><tbody></tbody></table>
+
+        <h2>Questions per day (last 14)</h2>
+        <table id="daily"><thead><tr><th>Day</th><th class="num">Questions</th><th class="num">Chats</th><th style="width:40%"></th></tr></thead><tbody></tbody></table>
+
+        <h2>Slack workspaces</h2>
+        <table id="installs"><thead><tr><th>Workspace</th><th class="num">Installed</th></tr></thead><tbody></tbody></table>
+
+        <p class="muted" style="margin-top:28px;font-size:13px">
+          "Active chats" and "workspaces" are the honest reach numbers — Huddle
+          doesn't track individual end users (chat context is bounded and never
+          stored long-term), so there are no per-person counts to show.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      const $ = (s) => document.querySelector(s);
+      const KEY = 'huddle:admin:token';
+      const num = (n) => (n ?? 0).toLocaleString();
+
+      function showGate(msg) {
+        $('#gate').hidden = false;
+        $('#dash').hidden = true;
+        if (msg) { $('#gerr').textContent = msg; $('#gerr').hidden = false; }
+      }
+
+      async function load(token) {
+        try {
+          const res = await fetch('/api/admin/stats?token=' + encodeURIComponent(token));
+          if (res.status === 401) { localStorage.removeItem(KEY); return showGate('Wrong token.'); }
+          if (res.status === 404) return showGate('Admin isn’t enabled (set HUDDLE_ADMIN_TOKEN).');
+          if (!res.ok) return showGate('Error ' + res.status);
+          const d = await res.json();
+          localStorage.setItem(KEY, token);
+          render(d);
+        } catch (e) { showGate(e.message); }
+      }
+
+      function render(d) {
+        $('#gate').hidden = true;
+        $('#dash').hidden = false;
+        $('#asof').textContent = 'As of ' + new Date(d.generatedAt).toLocaleString();
+        const t = d.totals;
+        $('#cards').innerHTML = [
+          [t.todayQuestions, 'Questions today'],
+          [t.totalQuestions, 'Questions all-time'],
+          [t.activeChats, 'Active chats'],
+          [t.workspaces, 'Slack workspaces'],
+          [t.huddles, 'Plans created'],
+        ].map(([n, l]) => `<div class="card"><div class="n">${num(n)}</div><div class="l">${l}</div></div>`).join('');
+
+        $('#platforms tbody').innerHTML = (d.byPlatform || []).map(
+          (p) => `<tr><td>${p.platform}</td><td class="num">${num(p.chats)}</td><td class="num">${num(p.questions)}</td></tr>`
+        ).join('') || '<tr><td class="muted" colspan="3">No activity yet.</td></tr>';
+
+        const max = Math.max(1, ...(d.daily || []).map((r) => r.questions));
+        $('#daily tbody').innerHTML = (d.daily || []).map(
+          (r) => `<tr><td>${r.day}</td><td class="num">${num(r.questions)}</td><td class="num">${num(r.chats)}</td><td><div class="bar" style="width:${(r.questions / max) * 100}%"></div></td></tr>`
+        ).join('') || '<tr><td class="muted" colspan="4">No activity yet.</td></tr>';
+
+        $('#installs tbody').innerHTML = (d.installs || []).map(
+          (i) => `<tr><td>${(i.team_name || '—')}</td><td class="num">${(i.installed_at || '').slice(0, 10)}</td></tr>`
+        ).join('') || '<tr><td class="muted" colspan="2">No Slack installs yet.</td></tr>';
+      }
+
+      $('#go').addEventListener('click', () => load($('#token').value.trim()));
+      $('#token').addEventListener('keydown', (e) => { if (e.key === 'Enter') load($('#token').value.trim()); });
+      $('#refresh').addEventListener('click', () => load(localStorage.getItem(KEY)));
+
+      const saved = localStorage.getItem(KEY);
+      if (saved) load(saved); else showGate();
+    </script>
+  </body>
+</html>

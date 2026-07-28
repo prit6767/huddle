@@ -22,6 +22,7 @@ import { GROUP_TYPES } from '../src/vocab.mjs';
 import { handleSlack, slackInstallUrl } from './slack.mjs';
 import { handleGoogleChat } from './google-chat.mjs';
 import { handleTelegram } from './telegram.mjs';
+import { handleAdmin } from './admin.mjs';
 import { formatAnswer } from '../src/assistant.mjs';
 import { claimQuestion, answerWithCache } from './chat-state.mjs';
 
@@ -125,6 +126,10 @@ export async function handle(request, env, ctx) {
   // Telegram posts updates here (registered via setWebhook).
   if (path === '/telegram/webhook') {
     return handleTelegram(request, env, ctx);
+  }
+  // Admin analytics — token-gated, the operator's own usage data.
+  if (path === '/api/admin/stats') {
+    return handleAdmin(request, env);
   }
   const body = async () => {
     try {
