@@ -30,15 +30,12 @@
          runs, so repeat visitors and reduced-motion users never see a flash.
          Once per browser session, skippable with any key or click. -->
     <script>
-      try {
-        if (
-          !sessionStorage.getItem('huddle:booted') &&
-          !matchMedia('(prefers-reduced-motion: reduce)').matches
-        ) {
-          document.documentElement.dataset.boot = '1';
-          sessionStorage.setItem('huddle:booted', '1');
-        }
-      } catch (e) {}
+      // Boot-log splash disabled for the clean, light look. (Code kept in
+      // app.js/styles.css; flip this flag on to bring the terminal intro back.)
+      /* if (!sessionStorage.getItem('huddle:booted') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+           document.documentElement.dataset.boot = '1';
+           sessionStorage.setItem('huddle:booted', '1');
+         } */
     </script>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/png" href="/icon.png" />

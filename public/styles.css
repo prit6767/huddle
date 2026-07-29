@@ -54,32 +54,11 @@
   --maxw: 1120px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #211d1a;
-    --surface: #2b2723;
-    --surface-sunk: #241f1c;
-    --ink: #f2ece5;
-    --ink-muted: #b0a69b;
-    --ink-faint: #857a6f;
-    --hairline: #3a342e;
-
-    /* coral and green held at equal chroma so neither dominates */
-    --coral: #ff7554;
-    --coral-press: #e85f3f;
-    --coral-soft: #3d2823;
-
-    --computed: #4fb87b;
-    --computed-soft: #22352a;
-    /* listed stays desaturated — the computed/listed distinction must
-       survive the theme, or the honesty system silently breaks */
-    --listed: #918a80;
-    --friction: #e09b3d;
-    --friction-soft: #372c1a;
-    --link: #7ab0e8;
-
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
-  }
+/* Light-only, like Auralize. The warm-dark theme is retired from the public
+   page so the surface reads clean and bright everywhere, regardless of the
+   viewer's system setting. */
+:root {
+  color-scheme: light;
 }
 
 * {
@@ -219,7 +198,7 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  --grid-line: color-mix(in srgb, var(--ink) 7%, transparent);
+  --grid-line: color-mix(in srgb, var(--ink) 3.5%, transparent);
   background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 48px 48px;
@@ -693,12 +672,12 @@ select:focus {
 
 /* ================================================================= bands */
 .band {
-  padding: var(--s7) 0;
+  padding: clamp(56px, 8vw, 96px) 0; /* airy, Auralize-style whitespace */
   border-top: 1px solid var(--hairline);
 }
 .band-title {
-  font-size: 30px;
-  line-height: 36px;
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1.15;
   font-weight: 800;
   margin-bottom: var(--s2);
 }
@@ -1357,10 +1336,10 @@ select:focus {
   right: -8%;
   width: 62%;
   height: 95%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--coral) 26%, transparent), transparent 70%);
-  filter: blur(20px);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--coral) 14%, transparent), transparent 70%);
+  filter: blur(28px);
   pointer-events: none;
-  opacity: 0.75;
+  opacity: 0.6;
 }
 
 /* --- lift the chat demo off the page and let it breathe --- */
@@ -1467,12 +1446,11 @@ select:focus {
   border-top: 0;
 }
 
-/* --- richer dark mode: a warm vertical wash instead of flat charcoal --- */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: linear-gradient(178deg, #26211d 0%, var(--bg) 34%);
-    background-attachment: fixed;
-  }
+/* Light-only now (see the note at the top): no dark-mode body wash. A soft
+   warm-paper gradient keeps the light surface from feeling clinically flat. */
+body {
+  background: linear-gradient(180deg, #fffdfa 0%, var(--bg) 46%);
+  background-attachment: fixed;
 }
 
 /* --- gradient accent on the hero headline emphasis --- */
