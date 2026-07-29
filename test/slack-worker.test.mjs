@@ -62,6 +62,19 @@ function stubFetch(calls) {
     if (url.includes('/api/users.info')) {
       return new Response(JSON.stringify({ ok: true, user: { profile: { display_name: 'Ana' } } }));
     }
+    if (url.includes('/api/conversations.history')) {
+      // Prior conversation, newest-first (as Slack returns it), one page.
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          has_more: false,
+          messages: [
+            { type: 'message', user: 'U1', text: 'so are we still doing tacos friday', ts: '100.2' },
+            { type: 'message', user: 'U2', text: 'the offsite is in Denver this year', ts: '100.1' },
+          ],
+        })
+      );
+    }
     if (url.includes('/api/chat.postMessage')) return new Response(JSON.stringify({ ok: true, ts: '1.1' }));
     return new Response(JSON.stringify({ ok: true }));
   };
@@ -197,6 +210,38 @@ describe('slack worker: answering', () => {
     const row = await env.DB.prepare('SELECT messages FROM chatlog WHERE chat_key = ?').bind('slack:T1:C1').first();
     // Both the user's message and Huddle's reply are in the buffer.
     assert.match(row.messages, /Huddle/, "the bot's own reply must be saved for context");
+  });
+
+  test('first message in a channel backfills the history from before it joined', async () => {
+    await withInstall();
+    const raw = JSON.stringify({
+      type: 'event_callback',
+      team_id: 'T1',
+      event_id: 'EvBackfill',
+      event: { type: 'message', channel: 'CNEW', user: 'U9', text: 'just chatting', ts: '200.0' },
+    });
+    await handleSlack(events(raw), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    restore();
+    const row = await env.DB.prepare('SELECT messages FROM chatlog WHERE chat_key = ?').bind('slack:T1:CNEW').first();
+    // The prior conversation Huddle never saw live is now in its context.
+    assert.match(row.messages, /tacos friday/);
+    assert.match(row.messages, /offsite is in Denver/);
+    // ...and it's chronological (oldest prior message before the newest).
+    assert.ok(row.messages.indexOf('Denver') < row.messages.indexOf('tacos'), 'backfill is ordered oldest→newest');
+  });
+
+  test('backfill runs only once per channel (no refetch on later messages)', async () => {
+    await withInstall();
+    const mk = (id, ts) =>
+      JSON.stringify({ type: 'event_callback', team_id: 'T1', event_id: id, event: { type: 'message', channel: 'CONCE', user: 'U9', text: 'hi', ts } });
+    await handleSlack(events(mk('E1', '201.0')), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    await handleSlack(events(mk('E2', '202.0')), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    restore();
+    const hits = calls.filter((c) => c.url.includes('conversations.history')).length;
+    assert.equal(hits, 1, 'history is read once, not on every message');
   });
 
   test('a non-addressed message is recorded for context but not answered', async () => {

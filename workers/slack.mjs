@@ -27,7 +27,16 @@ import {
   firstTimeSeeing,
   isSummarizeCommand,
   PER_CHAT_DAILY,
+  CONTEXT_MESSAGES,
 } from './chat-state.mjs';
+
+// How far back to read when Huddle first lands in a channel. Slack lets a bot
+// pull the channel's prior history (channels:history scope) — so instead of
+// starting blank, it can be caught up before its first answer. This reads the
+// WHOLE channel by paging, up to a safety ceiling that protects Slack's rate
+// limits and our storage; raise SLACK_BACKFILL_MAX to go deeper (0 = no cap).
+const BACKFILL_MAX = Number(process.env.SLACK_BACKFILL_MAX ?? 5000);
+const BACKFILL_PAGE = 200; // Slack's max page size for conversations.history
 
 const SCOPES = [
   'app_mentions:read',
@@ -80,6 +89,64 @@ async function displayName(token, userId) {
   return name;
 }
 
+// ------------------------------------------------------------- history backfill
+/**
+ * The first time Huddle sees a channel, read the conversation that happened
+ * BEFORE it was added, so its very first answer is already caught up instead of
+ * starting blank. Pages conversations.history (newest→oldest) to the ceiling,
+ * then seeds the context buffer with the most recent slice.
+ *
+ * Two honest limits, both platform/product facts, not shortcuts:
+ *  - Only the channel Huddle was invited to. Slack never lets a bot read a
+ *    channel it isn't a member of — there is no "all chats" to read.
+ *  - The model answers from a rolling window of recent messages (it cannot take
+ *    an entire channel's history into a single answer), so we keep the newest
+ *    CONTEXT_MESSAGES for context. The full history is still paged so nothing
+ *    older is silently missed within the ceiling.
+ */
+async function backfillChannel(env, token, channel, key) {
+  // Exactly once per channel — the PK clash on this marker is the guard.
+  if (!(await firstTimeSeeing(env.DB, `backfill:${key}`))) return;
+
+  const collected = [];
+  let cursor;
+  try {
+    do {
+      const res = await slackPost(token, 'conversations.history', {
+        channel,
+        limit: BACKFILL_PAGE,
+        ...(cursor ? { cursor } : {}),
+      });
+      for (const m of res.messages || []) {
+        if (m.subtype || m.bot_id || !m.text || !m.user) continue;
+        collected.push({ user: m.user, text: m.text, ts: Number(m.ts) });
+      }
+      cursor = res.has_more ? res.response_metadata?.next_cursor : null;
+    } while (cursor && (BACKFILL_MAX === 0 || collected.length < BACKFILL_MAX));
+  } catch (err) {
+    // Missing history scope, private channel, or rate limit — degrade to the
+    // old cold start rather than fail the whole event.
+    console.warn('[slack] history backfill failed:', err.message);
+    return;
+  }
+
+  if (!collected.length) return;
+  collected.sort((a, b) => a.ts - b.ts); // Slack returns newest-first
+  const recent = collected.slice(-CONTEXT_MESSAGES);
+
+  const msgs = [];
+  for (const m of recent) {
+    const who = await displayName(token, m.user);
+    msgs.push({ name: (who || 'Someone').slice(0, 40), text: String(m.text).slice(0, 500), at: m.ts * 1000 });
+  }
+  await env.DB.prepare(
+    `INSERT INTO chatlog (chat_key, messages, updated_at) VALUES (?, ?, ?)
+     ON CONFLICT(chat_key) DO UPDATE SET messages = excluded.messages, updated_at = excluded.updated_at`
+  )
+    .bind(key, JSON.stringify(msgs), new Date().toISOString())
+    .run();
+}
+
 // ------------------------------------------------------------- event work
 async function processEvent(env, body) {
   const db = env.DB;
@@ -95,6 +162,11 @@ async function processEvent(env, body) {
   if (!text) return;
 
   const key = `slack:${body.team_id}:${event.channel}`;
+
+  // First time in this channel? Read the history from before Huddle was added,
+  // so it's caught up before it ever answers. Runs once per channel.
+  await backfillChannel(env, token, event.channel, key);
+
   const name = await displayName(token, event.user);
   const addressed =
     (install.botUserId && text.includes(`<@${install.botUserId}>`)) || event.channel_type === 'im';
