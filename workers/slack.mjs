@@ -18,7 +18,15 @@ import { randomBytes } from 'node:crypto';
 import { verifySlackSignature } from '../src/slack-verify.mjs';
 import { formatAnswer } from '../src/assistant.mjs';
 import { installs } from './store-d1.mjs';
-import { answerWithCache } from './chat-state.mjs';
+import {
+  answerWithCache,
+  loadContext,
+  recordMessage,
+  transcriptOf,
+  claimQuestion,
+  firstTimeSeeing,
+  PER_CHAT_DAILY,
+} from './chat-state.mjs';
 
 const SCOPES = [
   'app_mentions:read',
@@ -32,9 +40,6 @@ const SCOPES = [
   'users:read',
 ].join(',');
 
-const PER_CHAT_DAILY = 50;
-const CONTEXT_MESSAGES = 20;
-
 export function slackConfigured(env) {
   return Boolean(env.SLACK_CLIENT_ID && env.SLACK_CLIENT_SECRET && env.SLACK_SIGNING_SECRET);
 }
@@ -42,61 +47,8 @@ export function slackInstallUrl(env, publicUrl) {
   return slackConfigured(env) ? `${publicUrl}/slack/install` : null;
 }
 
-// ------------------------------------------------------------- D1 state
-const today = () => new Date().toISOString().slice(0, 10);
-
-async function loadContext(db, key) {
-  const row = await db.prepare('SELECT messages FROM chatlog WHERE chat_key = ?').bind(key).first();
-  if (!row) return [];
-  try {
-    return JSON.parse(row.messages);
-  } catch {
-    return [];
-  }
-}
-async function recordMessage(db, key, name, text) {
-  const msgs = await loadContext(db, key);
-  msgs.push({ name: (name || 'Someone').slice(0, 40), text: String(text).slice(0, 500), at: Date.now() });
-  const trimmed = msgs.slice(-CONTEXT_MESSAGES);
-  await db
-    .prepare(
-      `INSERT INTO chatlog (chat_key, messages, updated_at) VALUES (?, ?, ?)
-       ON CONFLICT(chat_key) DO UPDATE SET messages = excluded.messages, updated_at = excluded.updated_at`
-    )
-    .bind(key, JSON.stringify(trimmed), new Date().toISOString())
-    .run();
-}
-function transcriptOf(msgs) {
-  return msgs.map((m) => `${m.name}: ${m.text}`).join('\n');
-}
-
-/** Claim one question against the durable daily cap. Returns true if allowed. */
-async function claimQuestion(db, key) {
-  const day = today();
-  await db
-    .prepare(
-      `INSERT INTO usage (day, chat_key, used) VALUES (?, ?, 1)
-       ON CONFLICT(day, chat_key) DO UPDATE SET used = used + 1`
-    )
-    .bind(day, key)
-    .run();
-  const row = await db.prepare('SELECT used FROM usage WHERE day = ? AND chat_key = ?').bind(day, key).first();
-  return (row?.used ?? 1) <= PER_CHAT_DAILY;
-}
-
-/** True the first time an event id is seen; Slack retries otherwise. */
-async function firstTimeSeeing(db, eventId) {
-  if (!eventId) return true;
-  try {
-    await db
-      .prepare('INSERT INTO seen_events (event_id, seen_at) VALUES (?, ?)')
-      .bind(eventId, new Date().toISOString())
-      .run();
-    return true;
-  } catch {
-    return false; // primary-key clash = already processed
-  }
-}
+// Per-chat state (context buffer, daily cap, event-dedup) is shared with the
+// other adapters in chat-state.mjs — imported above so all three stay in lockstep.
 
 // ------------------------------------------------------------- Slack Web API
 async function slackPost(token, method, payload) {
@@ -156,10 +108,15 @@ async function processEvent(env, body) {
   const context = transcriptOf(await loadContext(db, key));
   await recordMessage(db, key, name, cleaned);
 
+  // Reply in a thread hung off the triggering message, so a busy channel isn't
+  // flooded with the bot's (sometimes long, sourced) answers. If the question
+  // was already asked inside a thread, stay in that thread.
+  const threadTs = event.thread_ts || event.ts;
+
   if (!(await claimQuestion(db, key))) {
     await slackPost(token, 'chat.postMessage', {
       channel: event.channel,
-      thread_ts: event.thread_ts,
+      thread_ts: threadTs,
       text: `This channel has hit its daily limit of ${PER_CHAT_DAILY} questions. Resets at midnight UTC.`,
     });
     return;
@@ -172,7 +129,7 @@ async function processEvent(env, body) {
   if (answer?.text) await recordMessage(db, key, 'Huddle', answer.text);
   await slackPost(token, 'chat.postMessage', {
     channel: event.channel,
-    thread_ts: event.thread_ts,
+    thread_ts: threadTs,
     text: formatAnswer(answer),
     unfurl_links: false,
   });

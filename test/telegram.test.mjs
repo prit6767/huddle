@@ -167,6 +167,48 @@ describe('telegram: addressing', () => {
   });
 });
 
+describe('telegram: welcome on add', () => {
+  test('says hello once when the bot itself is added to a group', async () => {
+    await handleTelegram(
+      hook({
+        update_id: 30,
+        message: {
+          message_id: 7,
+          chat: { id: -100, type: 'group' },
+          from: { first_name: 'Ana' },
+          new_chat_members: [{ id: 42, is_bot: true, username: 'huddlebot' }],
+        },
+      }),
+      env,
+      wctx
+    );
+    await settle();
+    restore();
+    assert.equal(sends().length, 1, 'a welcome is sent');
+    assert.match(sends()[0].payload.text, /Huddle/);
+    assert.equal(sends()[0].payload.chat_id, -100);
+  });
+
+  test('another user joining does NOT trigger a welcome', async () => {
+    await handleTelegram(
+      hook({
+        update_id: 31,
+        message: {
+          message_id: 8,
+          chat: { id: -100, type: 'group' },
+          from: { first_name: 'Ana' },
+          new_chat_members: [{ id: 999, is_bot: false, first_name: 'Bo' }],
+        },
+      }),
+      env,
+      wctx
+    );
+    await settle();
+    restore();
+    assert.equal(sends().length, 0, 'only the bot joining greets the group');
+  });
+});
+
 describe('telegram: reliability', () => {
   test('a retried update_id is answered only once', async () => {
     const update = {

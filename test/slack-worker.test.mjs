@@ -163,6 +163,24 @@ describe('slack worker: answering', () => {
     assert.equal(posts.length, 1, 'exactly one reply');
     assert.equal(posts[0].payload.channel, 'C1');
     assert.ok(posts[0].payload.text, 'the reply has text');
+    // A top-level @mention is answered in a thread hung off that message,
+    // keeping the channel tidy.
+    assert.equal(posts[0].payload.thread_ts, '1.0', 'answer threads under the question');
+  });
+
+  test('a question asked inside a thread is answered in that same thread', async () => {
+    await withInstall();
+    const raw = JSON.stringify({
+      type: 'event_callback',
+      team_id: 'T1',
+      event_id: 'EvThread',
+      event: { type: 'message', channel: 'C1', user: 'U9', text: '<@UBOT> and now?', ts: '8.1', thread_ts: '8.0' },
+    });
+    await handleSlack(events(raw), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    restore();
+    const posts = calls.filter((c) => c.url.includes('chat.postMessage'));
+    assert.equal(posts[0].payload.thread_ts, '8.0', 'stays in the existing thread, not the message ts');
   });
 
   test('the bot records its OWN reply, so a follow-up has memory of it', async () => {

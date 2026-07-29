@@ -9,6 +9,10 @@ import { ask } from '../src/assistant.mjs';
 
 export const CONTEXT_MESSAGES = 20;
 export const PER_CHAT_DAILY = 50;
+
+/** The one-line hello every adapter sends when it first lands in a chat. */
+export const WELCOME =
+  "Hi, I'm Huddle. @mention me with a question and I'll search the web and answer with sources — handy for settling a debate. I only reply when you address me.";
 const CACHE_TTL_MS = Number(process.env.HUDDLE_CACHE_TTL_MS || 10 * 60 * 1000);
 
 const today = () => new Date().toISOString().slice(0, 10);

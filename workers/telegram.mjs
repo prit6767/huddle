@@ -20,7 +20,7 @@
 //   5. Add the bot to a group, or DM it. @mention it, reply to it, or start with
 //      "huddle,".
 import { formatAnswer } from '../src/assistant.mjs';
-import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, PER_CHAT_DAILY } from './chat-state.mjs';
+import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, PER_CHAT_DAILY, WELCOME } from './chat-state.mjs';
 
 const API = 'https://api.telegram.org';
 const WAKE = 'huddle';
@@ -77,9 +77,18 @@ function cleanQuestion(text, bot) {
 async function processUpdate(env, update) {
   const token = env.TELEGRAM_BOT_TOKEN;
   const msg = update.message || update.edited_message;
-  if (!msg || !msg.text) return;
+  if (!msg) return;
 
   const bot = await botIdentity(token);
+
+  // Just added to a group? Say hello once, so the group gets an instant sense
+  // of what it does instead of a silent bot nobody knows how to use.
+  if (msg.new_chat_members?.some((m) => m.id === bot.id)) {
+    await tg(token, 'sendMessage', { chat_id: msg.chat.id, text: WELCOME, disable_web_page_preview: true });
+    return;
+  }
+  if (!msg.text) return;
+
   const text = msg.text.trim();
   const chatId = msg.chat.id;
   const key = `telegram:${chatId}`;

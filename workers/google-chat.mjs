@@ -22,10 +22,17 @@
 //
 // No secret to copy — verification uses Google's public token info.
 import { formatAnswer } from '../src/assistant.mjs';
-import { answerWithCache } from './chat-state.mjs';
+import {
+  answerWithCache,
+  loadContext,
+  recordMessage,
+  transcriptOf,
+  claimQuestion,
+  firstTimeSeeing,
+  PER_CHAT_DAILY,
+  WELCOME,
+} from './chat-state.mjs';
 
-const PER_CHAT_DAILY = 50;
-const CONTEXT_MESSAGES = 20;
 const CHAT_ISSUER_EMAIL = 'chat@system.gserviceaccount.com';
 
 export function googleChatConfigured(env) {
@@ -59,54 +66,8 @@ async function verifiedGoogle(request, env) {
   }
 }
 
-// ------------------------------------------------------------- D1 state
-const today = () => new Date().toISOString().slice(0, 10);
-
-async function loadContext(db, key) {
-  const row = await db.prepare('SELECT messages FROM chatlog WHERE chat_key = ?').bind(key).first();
-  if (!row) return [];
-  try {
-    return JSON.parse(row.messages);
-  } catch {
-    return [];
-  }
-}
-async function recordMessage(db, key, name, text) {
-  const msgs = await loadContext(db, key);
-  msgs.push({ name: (name || 'Someone').slice(0, 40), text: String(text).slice(0, 500), at: Date.now() });
-  const trimmed = msgs.slice(-CONTEXT_MESSAGES);
-  await db
-    .prepare(
-      `INSERT INTO chatlog (chat_key, messages, updated_at) VALUES (?, ?, ?)
-       ON CONFLICT(chat_key) DO UPDATE SET messages = excluded.messages, updated_at = excluded.updated_at`
-    )
-    .bind(key, JSON.stringify(trimmed), new Date().toISOString())
-    .run();
-}
-const transcriptOf = (msgs) => msgs.map((m) => `${m.name}: ${m.text}`).join('\n');
-
-async function claimQuestion(db, key) {
-  const day = today();
-  await db
-    .prepare(
-      `INSERT INTO usage (day, chat_key, used) VALUES (?, ?, 1)
-       ON CONFLICT(day, chat_key) DO UPDATE SET used = used + 1`
-    )
-    .bind(day, key)
-    .run();
-  const row = await db.prepare('SELECT used FROM usage WHERE day = ? AND chat_key = ?').bind(day, key).first();
-  return (row?.used ?? 1) <= PER_CHAT_DAILY;
-}
-
-async function firstTimeSeeing(db, id) {
-  if (!id) return true;
-  try {
-    await db.prepare('INSERT INTO seen_events (event_id, seen_at) VALUES (?, ?)').bind(id, new Date().toISOString()).run();
-    return true;
-  } catch {
-    return false;
-  }
-}
+// Per-chat state (context buffer, daily cap, event-dedup) is shared with the
+// other adapters in chat-state.mjs — imported above so all three stay in lockstep.
 
 // ------------------------------------------------------------- handler
 const reply = (text) =>
@@ -131,9 +92,7 @@ export async function handleGoogleChat(request, env) {
 
   // Lifecycle events: a friendly hello, no answer needed.
   if (event.type === 'ADDED_TO_SPACE') {
-    return reply(
-      "Hi! I'm Huddle. @mention me with a question — I search the web and answer with sources, so I'm handy for settling a debate."
-    );
+    return reply(WELCOME);
   }
   if (event.type !== 'MESSAGE') return new Response('', { status: 200 });
 
