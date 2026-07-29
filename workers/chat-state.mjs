@@ -98,6 +98,29 @@ export async function answerWithCache(env, { question, context, platform, chatId
   return answer;
 }
 
+/** The compressed "before I joined" note for a channel, or null. */
+export async function getBackground(db, key) {
+  const row = await db.prepare('SELECT summary FROM channel_bg WHERE chat_key = ?').bind(key).first();
+  return row?.summary || null;
+}
+
+/** Store the one-time background summary for a channel. */
+export async function setBackground(db, key, summary) {
+  await db
+    .prepare(
+      `INSERT INTO channel_bg (chat_key, summary, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(chat_key) DO UPDATE SET summary = excluded.summary, updated_at = excluded.updated_at`
+    )
+    .bind(key, String(summary).slice(0, 4000), new Date().toISOString())
+    .run();
+}
+
+/** Prepend a channel's background note to the live context, when present. */
+export function withBackground(background, context) {
+  if (!background) return context;
+  return `Everything below happened in this channel BEFORE you joined — treat it as established backstory:\n${background}\n\n--- recent messages ---\n${context}`;
+}
+
 /** True the first time an id is seen; the platform retries otherwise. */
 export async function firstTimeSeeing(db, id) {
   if (!id) return true;

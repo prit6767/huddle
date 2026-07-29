@@ -6,8 +6,20 @@ process.env.HUDDLE_DISABLE_LLM = '1';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isSummarizeCommand } from '../workers/chat-state.mjs';
+import { isSummarizeCommand, withBackground } from '../workers/chat-state.mjs';
 import { summarize } from '../src/assistant.mjs';
+
+describe('withBackground', () => {
+  test('prepends the before-I-joined note as backstory', () => {
+    const out = withBackground('the team is planning an offsite in Denver', 'Ana: what time?');
+    assert.match(out, /BEFORE you joined/i);
+    assert.match(out, /Denver/);
+    assert.ok(out.indexOf('Denver') < out.indexOf('Ana:'), 'background comes before recent messages');
+  });
+  test('is a no-op when there is no background', () => {
+    assert.equal(withBackground(null, 'Ana: hi'), 'Ana: hi');
+  });
+});
 
 describe('isSummarizeCommand', () => {
   test('matches the recap commands and phrases', () => {

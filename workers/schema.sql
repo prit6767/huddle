@@ -34,6 +34,17 @@ CREATE TABLE IF NOT EXISTS chatlog (
   updated_at TEXT NOT NULL
 );
 
+-- One-time "what happened before I joined" note. When Huddle first lands in a
+-- channel it reads the prior history and compresses ALL of it into a compact
+-- background summary (the raw history is far too large to feed into every
+-- answer). This note is then prepended to the context on every reply, so the
+-- bot draws on the whole backstory, not just the last handful of messages.
+CREATE TABLE IF NOT EXISTS channel_bg (
+  chat_key   TEXT PRIMARY KEY,   -- "slack:<team>:<channel>"
+  summary    TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 -- Per-chat daily question counter — the spend guardrail, durable across
 -- isolates. (day, chat_key) so a new UTC day starts everyone fresh.
 CREATE TABLE IF NOT EXISTS usage (

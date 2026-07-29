@@ -17,6 +17,7 @@ import { randomBytes } from 'node:crypto';
 
 import { verifySlackSignature } from '../src/slack-verify.mjs';
 import { formatAnswer, summarize } from '../src/assistant.mjs';
+import { llmAvailable } from '../src/llm.mjs';
 import { installs } from './store-d1.mjs';
 import {
   answerWithCache,
@@ -26,6 +27,9 @@ import {
   claimQuestion,
   firstTimeSeeing,
   isSummarizeCommand,
+  getBackground,
+  setBackground,
+  withBackground,
   PER_CHAT_DAILY,
   CONTEXT_MESSAGES,
 } from './chat-state.mjs';
@@ -132,12 +136,21 @@ async function backfillChannel(env, token, channel, key) {
 
   if (!collected.length) return;
   collected.sort((a, b) => a.ts - b.ts); // Slack returns newest-first
-  const recent = collected.slice(-CONTEXT_MESSAGES);
 
+  // Resolve names once per unique user (cached), for both the buffer and the
+  // summary — cheaper than a lookup per message.
+  const nameOf = new Map();
+  const resolve = async (uid) => {
+    if (!nameOf.has(uid)) nameOf.set(uid, (await displayName(token, uid)) || 'Someone');
+    return nameOf.get(uid);
+  };
+
+  // Seed the live context buffer with the most recent slice, so the first
+  // answer has immediate, verbatim context.
+  const recent = collected.slice(-CONTEXT_MESSAGES);
   const msgs = [];
   for (const m of recent) {
-    const who = await displayName(token, m.user);
-    msgs.push({ name: (who || 'Someone').slice(0, 40), text: String(m.text).slice(0, 500), at: m.ts * 1000 });
+    msgs.push({ name: (await resolve(m.user)).slice(0, 40), text: String(m.text).slice(0, 500), at: m.ts * 1000 });
   }
   await env.DB.prepare(
     `INSERT INTO chatlog (chat_key, messages, updated_at) VALUES (?, ?, ?)
@@ -145,6 +158,21 @@ async function backfillChannel(env, token, channel, key) {
   )
     .bind(key, JSON.stringify(msgs), new Date().toISOString())
     .run();
+
+  // Compress the WHOLE prior history into a background note the model can
+  // actually use on every answer — the raw thousands of messages never fit a
+  // single prompt, so this is how "read every message before it joined" pays
+  // off. Bounded to the char budget below to stay inside the context window;
+  // for very long channels that's the most recent stretch of the history.
+  if (!llmAvailable()) return;
+  let transcript = '';
+  for (let i = collected.length - 1; i >= 0; i--) {
+    const line = `${await resolve(collected[i].user)}: ${collected[i].text}\n`;
+    if (transcript.length + line.length > 24000) break;
+    transcript = line + transcript; // prepend to keep chronological order
+  }
+  const bg = await summarize({ transcript, platform: 'slack', chatId: key });
+  if (bg?.text) await setBackground(env.DB, key, bg.text);
 }
 
 // ------------------------------------------------------------- event work
@@ -178,7 +206,7 @@ async function processEvent(env, body) {
     return;
   }
 
-  const context = transcriptOf(await loadContext(db, key));
+  const context = withBackground(await getBackground(db, key), transcriptOf(await loadContext(db, key)));
   await recordMessage(db, key, name, cleaned);
 
   // Reply in a thread hung off the triggering message, so a busy channel isn't
