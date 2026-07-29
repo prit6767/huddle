@@ -11,27 +11,29 @@
    ========================================================================== */
 
 :root {
-  /* ---- core: warm paper ---- */
-  --bg: #fbf7f2;
-  --surface: #ffffff;
-  --surface-sunk: #f4eee6;
-  --ink: #2a2622;
-  --ink-muted: #7a7269;
-  --ink-faint: #a99f94;
-  --hairline: #eae2d8;
+  /* ---- core: deep navy, indigo-lit (committed dark) ---- */
+  --bg: #0a0e27;
+  --surface: #141a3d;
+  --surface-sunk: #0e1330;
+  --ink: #e6e9f5;
+  --ink-muted: #a3a9c9;
+  --ink-faint: #6b7099;
+  --hairline: rgba(255, 255, 255, 0.09);
 
-  /* ---- brand ---- */
-  --coral: #f0603e;
-  --coral-press: #d64a2c;
-  --coral-soft: #ffe9e2;
+  /* ---- brand: periwinkle/indigo (mapped onto the old --coral names so
+         every existing reference recolors at once) ---- */
+  --coral: #7c74f5;
+  --coral-press: #5b54e8;
+  --coral-soft: rgba(99, 102, 241, 0.14);
+  --grad: linear-gradient(90deg, #818cf8, #a78bfa, #ec4899);
 
   /* ---- semantic: the honesty system ---- */
-  --computed: #2f8f5b;
-  --computed-soft: #e4f3ea;
-  --listed: #8a8078;
-  --friction: #c77a12;
-  --friction-soft: #fbefd6;
-  --link: #2e6fb0;
+  --computed: #4fb87b;
+  --computed-soft: #16321f;
+  --listed: #8f96b8;
+  --friction: #e09b3d;
+  --friction-soft: #2c2413;
+  --link: #a5b4fc;
 
   /* ---- shape ---- */
   --r-chip: 999px;
@@ -49,37 +51,9 @@
   --s7: 48px;
 
   /* ---- elevation: one soft shadow, never harsh ---- */
-  --shadow: 0 2px 8px rgba(42, 38, 34, 0.06);
+  --shadow: 0 10px 30px rgba(3, 5, 20, 0.5);
 
   --maxw: 1120px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #211d1a;
-    --surface: #2b2723;
-    --surface-sunk: #241f1c;
-    --ink: #f2ece5;
-    --ink-muted: #b0a69b;
-    --ink-faint: #857a6f;
-    --hairline: #3a342e;
-
-    /* coral and green held at equal chroma so neither dominates */
-    --coral: #ff7554;
-    --coral-press: #e85f3f;
-    --coral-soft: #3d2823;
-
-    --computed: #4fb87b;
-    --computed-soft: #22352a;
-    /* listed stays desaturated — the computed/listed distinction must
-       survive the theme, or the honesty system silently breaks */
-    --listed: #918a80;
-    --friction: #e09b3d;
-    --friction-soft: #372c1a;
-    --link: #7ab0e8;
-
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
-  }
 }
 
 * {
@@ -97,11 +71,24 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: Nunito, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 16px;
   line-height: 24px;
-  font-weight: 500;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient indigo/violet light, fixed behind everything — the Applio glow. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 15% 12%, rgba(99, 102, 241, 0.2), transparent 60%),
+    radial-gradient(55% 45% at 88% 55%, rgba(139, 92, 246, 0.16), transparent 60%),
+    radial-gradient(45% 40% at 50% 100%, rgba(236, 72, 153, 0.08), transparent 60%);
 }
 
 /* ---------------------------------------------------------------- type */
@@ -109,7 +96,8 @@ h1,
 h2,
 h3 {
   margin: 0 0 var(--s3);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  font-family: Sora, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 h1 {
   font-size: 30px;
@@ -462,16 +450,17 @@ main {
   cursor: not-allowed;
 }
 .btn.primary {
-  background: var(--coral);
-  border-color: var(--coral);
+  background: linear-gradient(180deg, #6c63f5, #4f46e5);
+  border-color: transparent;
   color: #fff;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
 }
 .btn.primary:hover:not(:disabled) {
-  background: var(--coral-press);
-  border-color: var(--coral-press);
+  background: linear-gradient(180deg, #7c74f5, #5b54e8);
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.45);
 }
 .btn.ghost {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.03);
 }
 .btn.lg {
   padding: var(--s3) var(--s5);
@@ -525,17 +514,28 @@ select:focus {
   }
 }
 .eyebrow {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
   font-size: 13px;
   line-height: 18px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--coral);
+  color: #c7ccf7;
   background: var(--coral-soft);
+  border: 1px solid rgba(129, 140, 248, 0.25);
   border-radius: var(--r-chip);
-  padding: var(--s1) var(--s3);
+  padding: var(--s2) var(--s4);
   margin-bottom: var(--s4);
+}
+.eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #818cf8;
+  box-shadow: 0 0 10px 1px rgba(129, 140, 248, 0.8);
 }
 .hero h1 {
   font-size: clamp(30px, 5.5vw, 52px);
@@ -545,7 +545,11 @@ select:focus {
 }
 .hero h1 em {
   font-style: normal;
-  color: var(--coral);
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 .lede {
   font-size: 16px;
@@ -732,11 +736,13 @@ select:focus {
 }
 .feature,
 .platform {
-  background: var(--surface);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0.008));
   border: 1px solid var(--hairline);
   border-radius: var(--r-card);
   padding: var(--s5);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
 }
 .platform {
   display: flex;
@@ -1475,19 +1481,14 @@ select:focus {
   border-top: 0;
 }
 
-/* --- richer dark mode: a warm vertical wash instead of flat charcoal --- */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: linear-gradient(178deg, #26211d 0%, var(--bg) 34%);
-    background-attachment: fixed;
-  }
-}
-
-/* --- gradient accent on the hero headline emphasis --- */
+/* --- gradient accent on the hero headline emphasis (Applio-style) --- */
 .hero h1 em {
-  /* plain coral — a gradient-clipped headline is a generic "AI landing page" tell */
   font-style: normal;
-  color: var(--coral);
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
