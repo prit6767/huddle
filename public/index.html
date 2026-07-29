@@ -6,12 +6,12 @@
     <title>Huddle — the AI you add to your group chat</title>
     <meta
       name="description"
-      content="Huddle is an AI that lives in your group chat. It settles arguments with real sources and turns 'where should we go?' into three bookable plans. On Slack, Google Chat, and Telegram."
+      content="Huddle is an AI that lives in your group chat. @mention it and it settles arguments with real, cited web sources — and stays quiet otherwise. On Slack, Google Chat, and Telegram."
     />
     <!--OG--><meta property="og:title" content="Huddle" />
     <meta
       property="og:description"
-      content="Add it to your group chat. It settles arguments with real sources, and turns 'where should we go?' into three bookable plans."
+      content="Add it to your group chat. @mention it and it settles arguments with real, cited web sources — and stays quiet otherwise."
     />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://huddle-hq.com/og.png" />
@@ -67,7 +67,6 @@
       </a>
       <nav class="topnav">
         <a href="#add">Add it</a>
-        <a href="#planner">Planner</a>
       </nav>
     </header>
 
@@ -171,11 +170,11 @@
             </article>
             <article class="feature">
               <div class="feature-icon"><span class="brand-mark">◍</span></div>
-              <h3>Plans the outing</h3>
+              <h3>Catches you up</h3>
               <p>
-                Say <code>/plan dinner in Austin</code> and everyone just talks. It pulls out
-                who's free, budgets, dietary needs and accessibility — then returns three
-                finalized options with booking links.
+                Say <code>catch me up</code> and it recaps the recent conversation — the gist,
+                what was decided, and anything still open — grounded only in the messages, never
+                invented.
               </p>
             </article>
             <article class="feature">
@@ -231,57 +230,6 @@
           </div>
         </section>
 
-        <!-- ------------------------ honesty system ----------------------- -->
-        <section class="band reveal" id="honesty">
-          <h2 class="band-title">It tells you what it actually knows</h2>
-          <p class="band-sub">
-            Every line on a plan is labelled by where it came from. Solid green means
-            <b>we did the arithmetic</b> from what your group said. Dashed means
-            <b>the catalog says so</b> — and we haven't checked. Accessibility and dietary
-            claims never get the green tick, because being wrong there hurts someone.
-          </p>
-
-          <div class="honesty-demo">
-            <article class="option demo-option" aria-label="Example plan option card">
-              <div class="headline">The easy yes</div>
-              <div class="venue">Neighborhood Noodle House</div>
-              <div class="when">Sat 6:30 pm — the window all 5 of you cover</div>
-              <div class="price">~$18/person · ~$90 total</div>
-              <p class="why">
-                Under everyone's budget with room to spare, and the only slot Priya and Marcus
-                both make.
-              </p>
-              <div class="tags">
-                <span class="tag check">under $20/person</span>
-                <span class="tag check">works for all 5</span>
-                <span class="tag listed">vegetarian (for Sam)</span>
-                <span class="tag listed">step-free (for Marta)</span>
-              </div>
-              <p class="caveat">Step-free access comes from the listing — call ahead to confirm.</p>
-            </article>
-
-            <ul class="honesty-legend">
-              <li>
-                <span class="tag check">computed</span>
-                <p>Derived from what people said. The arithmetic is ours, and it's correct.</p>
-              </li>
-              <li>
-                <span class="tag listed">from the catalog</span>
-                <p>
-                  Listed by the venue, not verified by us. The card says so instead of
-                  pretending.
-                </p>
-              </li>
-              <li>
-                <span class="tag none">4.6★ (1,204 reviews)</span>
-                <p>
-                  Doesn't exist here. No ratings, no stars, no invented social proof —
-                  the data model won't hold one.
-                </p>
-              </li>
-            </ul>
-          </div>
-        </section>
 
         <!-- ---------------------------- add it --------------------------- -->
         <section class="band reveal" id="add">
@@ -310,139 +258,8 @@
 
         </section>
 
-        <!-- ---------------------------- planner -------------------------- -->
-        <section class="band tint reveal" id="planner">
-          <h2 class="band-title">Or plan something right here</h2>
-          <p class="band-sub">
-            No chat app needed. Start a plan, share the link, everyone drops their constraints.
-          </p>
-
-          <form id="create-form" class="card form">
-            <div class="field">
-              <label for="f-title">What's the occasion?</label>
-              <input
-                id="f-title"
-                name="title"
-                placeholder="Maya's birthday dinner"
-                required
-                maxlength="120"
-              />
-            </div>
-
-            <div class="row">
-              <div class="field">
-                <label for="f-city">City</label>
-                <input id="f-city" name="city" placeholder="Portland, OR" required maxlength="80" />
-              </div>
-              <div class="field">
-                <label for="f-size">Roughly how many?</label>
-                <input id="f-size" name="partySize" type="number" min="2" max="30" value="5" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="field">
-                <label for="f-group">Who's coming?</label>
-                <select id="f-group" name="groupType">
-                  <option value="friends">Friends</option>
-                  <option value="family">Family</option>
-                  <option value="teens">Teens</option>
-                  <option value="coworkers">Coworkers</option>
-                  <option value="seniors">Seniors</option>
-                  <option value="mixed" selected>A mix</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="f-name">Your name</label>
-                <input id="f-name" name="organizerName" placeholder="Sam" maxlength="40" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="field">
-                <label for="f-start">Earliest date</label>
-                <input id="f-start" name="windowStart" type="date" />
-              </div>
-              <div class="field">
-                <label for="f-end">Latest date</label>
-                <input id="f-end" name="windowEnd" type="date" />
-              </div>
-            </div>
-
-            <button class="btn primary lg wide" type="submit">Create the huddle →</button>
-            <p class="error" id="create-error" hidden></p>
-          </form>
-        </section>
       </section>
 
-      <!-- ============================ HUDDLE ============================= -->
-      <section id="view-huddle" class="view" hidden>
-        <div class="huddle-head">
-          <div>
-            <h1 id="h-title"></h1>
-            <p class="meta" id="h-meta"></p>
-          </div>
-          <button class="btn ghost" id="copy-link">Copy invite link</button>
-        </div>
-
-        <div class="layout">
-          <div class="col-main">
-            <div class="card" id="join-card">
-              <h2>Jump in</h2>
-              <p class="muted">
-                One message is usually enough. Say when you're free, what you'd spend, and
-                anything the group has to work around.
-              </p>
-              <form id="join-form" class="inline-form">
-                <input id="join-name" placeholder="Your name" required maxlength="40" />
-                <button class="btn primary" type="submit">Start</button>
-              </form>
-              <p class="error" id="join-error" hidden></p>
-            </div>
-
-            <div class="card chat" id="chat-card" hidden>
-              <div class="chat-log" id="chat-log"></div>
-              <form id="chat-form" class="inline-form">
-                <input
-                  id="chat-input"
-                  placeholder="Free Sat after 5, ~$25, and my sister's vegetarian"
-                  autocomplete="off"
-                  maxlength="2000"
-                />
-                <button class="btn primary" id="chat-send" type="submit">Send</button>
-              </form>
-              <div class="chip-row" id="quick-chips"></div>
-            </div>
-          </div>
-
-          <aside class="col-side">
-            <div class="card">
-              <h3>Who's in</h3>
-              <ul class="roster" id="roster"></ul>
-            </div>
-
-            <div class="card" id="consensus-card">
-              <h3>What the group needs</h3>
-              <div id="consensus-body" class="muted">Waiting on the first answer.</div>
-            </div>
-
-            <button class="btn primary wide lg" id="finalize">Get 3 plans</button>
-            <p class="error" id="finalize-error" hidden></p>
-          </aside>
-        </div>
-
-        <section id="results" hidden>
-          <div id="plan-term" class="term" hidden aria-live="polite">
-            <div class="term-bar">huddle — working it out</div>
-            <div class="term-lines" id="plan-term-lines"></div>
-          </div>
-          <div class="results-head">
-            <h2>Three ways this works</h2>
-            <p class="muted" id="tradeoff"></p>
-          </div>
-          <div class="options" id="options"></div>
-        </section>
-      </section>
     </main>
 
     <footer class="footer">
@@ -451,9 +268,8 @@
           <b>Huddle</b> — the AI that lives in your group chat.
         </p>
         <p class="disclaimer">
-          Venue catalog is illustrative sample data — not real businesses. Booking links are live
-          city-scoped searches. Accessibility and dietary details come from listings, not checks we
-          ran; confirm with the venue before you commit.
+          Answers come with their web sources so you can check them. Huddle only replies when
+          you address it, and reads the chat for context — it never posts on its own.
         </p>
       </div>
     </footer>
