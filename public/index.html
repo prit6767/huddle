@@ -6,7 +6,7 @@
     <title>Huddle — the AI you add to your group chat</title>
     <meta
       name="description"
-      content="Huddle is an open-source AI that lives in your group chat. It settles arguments with real sources and turns 'where should we go?' into three bookable plans. On Slack, Google Chat, and Telegram."
+      content="Huddle is an AI that lives in your group chat. It settles arguments with real sources and turns 'where should we go?' into three bookable plans. On Slack, Google Chat, and Telegram."
     />
     <!--OG--><meta property="og:title" content="Huddle" />
     <meta
@@ -68,13 +68,6 @@
       <nav class="topnav">
         <a href="#add">Add it</a>
         <a href="#planner">Planner</a>
-        <a
-          href="https://github.com/prit6767/huddle"
-          target="_blank"
-          rel="noopener noreferrer"
-          >GitHub</a
-        >
-        <span class="engine" id="engine-badge" title="Planning engine in use"></span>
       </nav>
     </header>
 
@@ -93,7 +86,7 @@
             <div class="cta-row">
               <a class="btn primary lg" href="#platforms">Add to your chat</a>
             </div>
-            <p class="fineprint">Free &amp; open source · one-click on Slack</p>
+            <p class="fineprint">Free to use · one-click on Slack</p>
           </div>
 
           <!-- Chat demo: the argument it was built to end -->
@@ -294,8 +287,7 @@
         <section class="band reveal" id="add">
           <h2 class="band-title">Add it to your chat</h2>
           <p class="band-sub">
-            The easy way: one click and it's in your workspace — no terminal, no tokens, nothing
-            to install. Want to run your own copy instead? That's the second option.
+            One click and it's in your workspace — no terminal, no tokens, nothing to install.
           </p>
 
           <!-- ---- Path A: hosted bot. Shown only when this instance actually
@@ -316,161 +308,6 @@
             </p>
           </div>
 
-          <!-- ---- Path B: self-host, collapsed so the one-click path leads.
-               Everything below (steps + platform cards) lives in the details. -->
-          <details class="selfhost" id="selfhost">
-            <summary>
-              <span class="selfhost-summary-title">Prefer to run your own copy?</span>
-              <span class="muted">Self-host — about 10 minutes. Tap to expand.</span>
-            </summary>
-            <div class="selfhost-inner">
-              <p class="band-sub">
-                You hold the keys and the bill, and nothing leaves your machine. Do it once and
-                your bot serves every group you add it to.
-              </p>
-
-          <!-- Step 1: the part every platform shares -->
-          <div class="setup-step">
-            <div class="step-n" aria-hidden="true">1</div>
-            <div class="step-body">
-              <h3>Get it running</h3>
-              <p class="muted">
-                Clone and install. It works with no API key; add one to unlock the part that
-                answers questions.
-              </p>
-              <pre class="cmd"><code>git clone https://github.com/prit6767/huddle
-cd huddle &amp;&amp; npm install
-export ANTHROPIC_API_KEY=sk-ant-...   # optional
-npm start                             # → localhost:3000</code></pre>
-            </div>
-          </div>
-
-          <!-- Step 2: platform-specific token -->
-          <div class="setup-step">
-            <div class="step-n" aria-hidden="true">2</div>
-            <div class="step-body">
-              <h3>Create the bot and get a token</h3>
-              <p class="muted">
-                Pick your platform. Each has one step people miss — flagged in amber.
-              </p>
-
-              <div class="platform-grid">
-                <article class="platform">
-                  <header><span class="plat-icon tg">✈️</span><h3>Telegram</h3></header>
-                  <ol>
-                    <li>Message <b>@BotFather</b> → <code>/newbot</code> → copy the token</li>
-                    <li><b>/setprivacy</b> → your bot → <b>Disable</b></li>
-                    <li>Add the bot to your group</li>
-                    <li>Remove it and re-add it</li>
-                  </ol>
-                  <p class="warn-note">
-                    Privacy mode is cached when the bot joins. Skip the re-add and it stays
-                    deaf to normal messages — which is the whole product.
-                  </p>
-                </article>
-
-                <article class="platform">
-                  <header><span class="plat-icon dc">🎮</span><h3>Discord</h3></header>
-                  <ol>
-                    <li>
-                      <a
-                        href="https://discord.com/developers/applications"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        >Developer Portal</a
-                      >
-                      → New Application → Bot
-                    </li>
-                    <li>Reset Token → copy it</li>
-                    <li>Enable <b>Message Content Intent</b></li>
-                    <li>
-                      OAuth2 → URL Generator → scope <code>bot</code>, then Send Messages, Read
-                      Message History, Add Reactions
-                    </li>
-                    <li>Open the generated URL to invite it</li>
-                  </ol>
-                  <p class="warn-note">
-                    Without Message Content Intent, Discord delivers empty messages and the bot
-                    reads nothing.
-                  </p>
-                </article>
-
-                <article class="platform">
-                  <header><span class="plat-icon sl">💼</span><h3>Slack</h3></header>
-                  <ol>
-                    <li>
-                      <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer"
-                        >api.slack.com/apps</a
-                      >
-                      → Create New App
-                    </li>
-                    <li><b>Socket Mode</b> → Enable → app-level token</li>
-                    <li>Add bot scopes, subscribe to message events</li>
-                    <li>Install to workspace → copy both tokens</li>
-                    <li>Invite it: <code>/invite @YourApp</code></li>
-                  </ol>
-                  <p class="warn-note">
-                    Socket Mode needs no public URL, so it runs inside a private network — and
-                    self-hosted, no conversation data leaves your infrastructure.
-                  </p>
-                </article>
-
-                <article class="platform">
-                  <header><span class="plat-icon im">💬</span><h3>iMessage</h3></header>
-                  <ol>
-                    <li>System Settings → Privacy &amp; Security → <b>Full Disk Access</b></li>
-                    <li>Add your terminal app, then fully quit and reopen it</li>
-                    <li>Run <code>npm run doctor</code> to check every permission</li>
-                    <li>
-                      No token. For its own identity, sign Messages into a
-                      <b>dedicated Apple ID</b> — an email works, no phone number needed
-                    </li>
-                  </ol>
-                  <p class="warn-note">
-                    Apple ships no bot API. This drives Messages on a Mac you own, so it only
-                    runs while that Mac is awake — and without its own Apple ID, replies send
-                    from your number.
-                  </p>
-                </article>
-              </div>
-            </div>
-          </div>
-
-          <!-- Step 3: run the bots -->
-          <div class="setup-step">
-            <div class="step-n" aria-hidden="true">3</div>
-            <div class="step-body">
-              <h3>Start the bot process</h3>
-              <p class="muted">
-                In a second terminal, with the token from step 2.
-              </p>
-              <pre class="cmd"><code>TELEGRAM_BOT_TOKEN=... npm run bots
-DISCORD_BOT_TOKEN=...  npm run bots
-ENABLE_IMESSAGE=1      npm run bots</code></pre>
-            </div>
-          </div>
-
-          <!-- Step 4: use it -->
-          <div class="setup-step">
-            <div class="step-n" aria-hidden="true">4</div>
-            <div class="step-body">
-              <h3>Talk to it</h3>
-              <p class="muted">
-                It reads along for context but answers <b>only</b> when addressed — @mention it,
-                reply to it, or start with <code>huddle,</code>. To plan something:
-                <code>/plan dinner in Austin</code>, then everyone talks normally and it reacts ✅
-                as it picks up each person; <code>/go</code> returns three options.
-              </p>
-            </div>
-          </div>
-
-              <p class="friction">
-                No WhatsApp: it has no group-bot API, and the unofficial workaround gets numbers
-                banned. Paste a huddle's invite link into any chat instead — it unfurls into a card
-                everyone taps through. Zero setup, works everywhere.
-              </p>
-            </div>
-          </details>
         </section>
 
         <!-- ---------------------------- planner -------------------------- -->
@@ -611,10 +448,7 @@ ENABLE_IMESSAGE=1      npm run bots</code></pre>
     <footer class="footer">
       <div class="footer-inner">
         <p>
-          <b>Huddle</b> — open source on
-          <a href="https://github.com/prit6767/huddle" target="_blank" rel="noopener noreferrer"
-            >GitHub</a
-          >.
+          <b>Huddle</b> — the AI that lives in your group chat.
         </p>
         <p class="disclaimer">
           Venue catalog is illustrative sample data — not real businesses. Booking links are live

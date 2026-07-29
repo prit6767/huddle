@@ -166,7 +166,8 @@ function render() {
   const h = state.huddle;
   if (!h) return;
 
-  $('#engine-badge').textContent = h.engine;
+  const badge = $('#engine-badge');
+  if (badge) badge.textContent = h.engine;
   $('#h-title').textContent = h.title;
   $('#h-meta').textContent =
     `${h.city} · ${h.groupType} · about ${h.partySize} people · ` +
@@ -451,7 +452,7 @@ function startPlanLog() {
   results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   const n = state.huddle?.consensus?.respondedCount || state.huddle?.participants?.length || 0;
-  const engine = $('#engine-badge').textContent || 'heuristic';
+  const engine = $('#engine-badge')?.textContent || 'heuristic';
   const LINES = [
     `extract   pulling constraints from ${n} ${n === 1 ? 'person' : 'people'} ...`,
     'merge     budget = min of maxes · dietary = union · time = overlap ...',
@@ -581,7 +582,8 @@ window.addEventListener('popstate', route);
 (async function boot() {
   try {
     const health = await api('/api/health');
-    $('#engine-badge').textContent = health.engine;
+    const engineBadge = $('#engine-badge');
+    if (engineBadge) engineBadge.textContent = health.engine;
     renderInvites(health.invites);
     $('#f-start').value = health.defaultWindow.start;
     $('#f-end').value = health.defaultWindow.end;
