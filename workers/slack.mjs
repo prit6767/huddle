@@ -16,7 +16,7 @@
 import { randomBytes } from 'node:crypto';
 
 import { verifySlackSignature } from '../src/slack-verify.mjs';
-import { formatAnswer } from '../src/assistant.mjs';
+import { formatAnswer, summarize } from '../src/assistant.mjs';
 import { installs } from './store-d1.mjs';
 import {
   answerWithCache,
@@ -25,6 +25,7 @@ import {
   transcriptOf,
   claimQuestion,
   firstTimeSeeing,
+  isSummarizeCommand,
   PER_CHAT_DAILY,
 } from './chat-state.mjs';
 
@@ -118,6 +119,18 @@ async function processEvent(env, body) {
       channel: event.channel,
       thread_ts: threadTs,
       text: `This channel has hit its daily limit of ${PER_CHAT_DAILY} questions. Resets at midnight UTC.`,
+    });
+    return;
+  }
+
+  // "/summarize" / "catch me up": recap the context we already hold, no search.
+  if (isSummarizeCommand(cleaned)) {
+    const summary = await summarize({ transcript: context, platform: 'slack', chatId: key });
+    await slackPost(token, 'chat.postMessage', {
+      channel: event.channel,
+      thread_ts: threadTs,
+      text: summary.text,
+      unfurl_links: false,
     });
     return;
   }

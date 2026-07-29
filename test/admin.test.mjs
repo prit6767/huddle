@@ -105,4 +105,23 @@ describe('admin aggregation', () => {
     const s = await adminStats(env);
     assert.equal(s.installs[0].team_name, 'Acme');
   });
+
+  test('retention windows count active + returning chats', async () => {
+    // One more day for slack:T1:C1 so it becomes a "returning" chat (2 days).
+    env.DB._sql.prepare('INSERT INTO usage (day, chat_key, used) VALUES (?, ?, ?)').run('2026-07-01', 'slack:T1:C1', 2);
+    const s = await adminStats(env);
+    // 3 chats used today (within 7d); the lone 2026-07-01 telegram chat is older.
+    assert.equal(s.retention.activeChats7d, 3);
+    // All 4 fall inside 30d.
+    assert.equal(s.retention.activeChats30d, 4);
+    // Only slack:T1:C1 appears on 2 separate days.
+    assert.equal(s.retention.returningChats, 1);
+  });
+
+  test('busiest chats rank by volume and never leak the raw chat_key', async () => {
+    const s = await adminStats(env);
+    assert.equal(s.topChats[0].questions, 5); // slack:T1:C1
+    assert.ok(s.topChats.every((c) => !('chat_key' in c)), 'raw chat_key is not exposed');
+    assert.ok(s.topChats.every((c) => typeof c.platform === 'string'));
+  });
 });

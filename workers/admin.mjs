@@ -54,13 +54,35 @@ export async function adminStats(env) {
   const rows = async (sql, ...b) => (await db.prepare(sql).bind(...b).all()).results || [];
   const today = new Date().toISOString().slice(0, 10);
 
-  const [workspaces, totalQ, todayQ, activeChats, huddles] = await Promise.all([
+  // Retention windows: a chat "active" in the last N days, and chats that came
+  // back on 2+ separate days (the real stickiness signal — one-and-done chats
+  // inflate any raw total). Cutoffs computed in JS so they don't depend on
+  // SQLite date() quirks.
+  const cut = (n) => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - n);
+    return d.toISOString().slice(0, 10);
+  };
+  const d7 = cut(6);
+  const d30 = cut(29);
+
+  const [workspaces, totalQ, todayQ, activeChats, huddles, active7, active30, returning] = await Promise.all([
     one('SELECT COUNT(*) AS n FROM installs'),
     one('SELECT COALESCE(SUM(used), 0) AS n FROM usage'),
     one('SELECT COALESCE(SUM(used), 0) AS n FROM usage WHERE day = ?', today),
     one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage'),
     one('SELECT COUNT(*) AS n FROM huddles'),
+    one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage WHERE day >= ?', d7),
+    one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage WHERE day >= ?', d30),
+    one('SELECT COUNT(*) AS n FROM (SELECT chat_key FROM usage GROUP BY chat_key HAVING COUNT(DISTINCT day) >= 2)'),
   ]);
+
+  // Busiest chats — platform + volume + how many days they came back. Raw
+  // chat_key (which carries channel/team ids) is deliberately NOT exposed.
+  const topChats = await rows(
+    `SELECT ${PLATFORM_EXPR} AS platform, COALESCE(SUM(used), 0) AS questions, COUNT(DISTINCT day) AS activeDays
+     FROM usage GROUP BY chat_key ORDER BY questions DESC LIMIT 10`
+  );
 
   const byPlatform = await rows(
     `SELECT ${PLATFORM_EXPR} AS platform, COUNT(DISTINCT chat_key) AS chats, COALESCE(SUM(used), 0) AS questions
@@ -82,7 +104,13 @@ export async function adminStats(env) {
       todayQuestions: todayQ.n || 0,
       huddles: huddles.n || 0,
     },
+    retention: {
+      activeChats7d: active7.n || 0,
+      activeChats30d: active30.n || 0,
+      returningChats: returning.n || 0,
+    },
     byPlatform,
+    topChats,
     daily,
     installs,
     generatedAt: new Date().toISOString(),

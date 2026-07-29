@@ -21,7 +21,7 @@
 //   3. Set GOOGLE_PROJECT_NUMBER (the project's *number*, not id) as a Worker var.
 //
 // No secret to copy — verification uses Google's public token info.
-import { formatAnswer } from '../src/assistant.mjs';
+import { formatAnswer, summarize } from '../src/assistant.mjs';
 import {
   answerWithCache,
   loadContext,
@@ -29,6 +29,7 @@ import {
   transcriptOf,
   claimQuestion,
   firstTimeSeeing,
+  isSummarizeCommand,
   PER_CHAT_DAILY,
   WELCOME,
 } from './chat-state.mjs';
@@ -114,6 +115,12 @@ export async function handleGoogleChat(request, env) {
 
   if (!(await claimQuestion(env.DB, key))) {
     return reply(`This space has hit its daily limit of ${PER_CHAT_DAILY} questions. Resets at midnight UTC.`);
+  }
+
+  // "catch me up" / "/summarize": recap the context we already hold, no search.
+  if (isSummarizeCommand(question)) {
+    const summary = await summarize({ transcript: context, platform: 'google', chatId: key });
+    return reply(summary.text);
   }
 
   const answer = await answerWithCache(env, { question, context, platform: 'google', chatId: key });

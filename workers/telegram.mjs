@@ -19,8 +19,8 @@
 //      https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://huddle-hq.com/telegram/webhook&secret_token=<SECRET>
 //   5. Add the bot to a group, or DM it. @mention it, reply to it, or start with
 //      "huddle,".
-import { formatAnswer } from '../src/assistant.mjs';
-import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, PER_CHAT_DAILY, WELCOME } from './chat-state.mjs';
+import { formatAnswer, summarize } from '../src/assistant.mjs';
+import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, isSummarizeCommand, PER_CHAT_DAILY, WELCOME } from './chat-state.mjs';
 
 const API = 'https://api.telegram.org';
 const WAKE = 'huddle';
@@ -60,7 +60,7 @@ function isAddressed(msg, text, bot) {
   const lower = text.toLowerCase();
   if (bot.username && lower.includes(`@${bot.username}`)) return true;
   if (lower.startsWith(`${WAKE},`) || lower.startsWith(`${WAKE} `)) return true;
-  if (/^\/(ask|huddle)\b/i.test(text)) return true;
+  if (/^\/(ask|huddle|summari[sz]e|tldr|recap)\b/i.test(text)) return true;
   if (msg.reply_to_message?.from?.id === bot.id) return true;
   return false;
 }
@@ -118,6 +118,19 @@ async function processUpdate(env, update) {
   }
 
   await tg(token, 'sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
+
+  // "/summarize" / "catch me up": recap the context we already hold, no search.
+  if (isSummarizeCommand(question)) {
+    const summary = await summarize({ transcript: context, platform: 'telegram', chatId: key });
+    await tg(token, 'sendMessage', {
+      chat_id: chatId,
+      text: summary.text,
+      reply_to_message_id: msg.message_id,
+      disable_web_page_preview: true,
+    });
+    return;
+  }
+
   const answer = await answerWithCache(env, { question, context, platform: 'telegram', chatId: key });
   // Save the bot's reply so a follow-up has memory of what it just said.
   if (answer?.text) await recordMessage(env.DB, key, 'Huddle', answer.text);

@@ -10,6 +10,12 @@ import { ask } from '../src/assistant.mjs';
 export const CONTEXT_MESSAGES = 20;
 export const PER_CHAT_DAILY = 50;
 
+/** True when an addressed message is asking for a recap of the conversation. */
+export function isSummarizeCommand(text) {
+  const t = String(text || '').trim();
+  return /^\/(summari[sz]e|tldr|recap)\b/i.test(t) || /^(catch me up|tl;?dr)\b/i.test(t);
+}
+
 /** The one-line hello every adapter sends when it first lands in a chat. */
 export const WELCOME =
   "Hi, I'm Huddle. @mention me with a question and I'll search the web and answer with sources — handy for settling a debate. I only reply when you address me.";

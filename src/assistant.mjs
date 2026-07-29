@@ -187,6 +187,63 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
   return { text: 'Something went wrong on my end.', sources: [] };
 }
 
+const SUMMARY_SYSTEM = `You are catching someone up on a group chat they missed. Read the recent messages and give a tight recap.
+
+- Open with a one-line gist of what the conversation is about.
+- Then up to 5 short bullets: what was discussed, any decisions made, and anything still open or unresolved.
+- Only include what is actually in the messages. Never invent, speculate, or add outside facts. Do not search the web.
+- No preamble ("Here's a summary"), no headers, and never end with a question back to the group.`;
+
+/**
+ * Recap the recent conversation for someone catching up. Reuses the answer
+ * model and the same daily budget, but never searches the web — a summary is
+ * grounded only in the messages it's given.
+ * Returns { text, sources: [] } so it formats/posts exactly like an answer.
+ */
+export async function summarize({ transcript, platform = 'unknown', chatId = 'unknown' }) {
+  const lines = String(transcript || '').trim();
+  if (lines.split('\n').filter(Boolean).length < 3) {
+    return { text: "There's not much to catch up on yet — I've only seen a message or two here.", sources: [] };
+  }
+  if (!llmAvailable()) {
+    return { text: "I need an API key to summarize — only the /plan features work without one.", sources: [] };
+  }
+  const anthropic = getClient();
+  if (!anthropic) return { text: 'My connection to Claude is not configured.', sources: [] };
+
+  const allowance = claim(platform, chatId);
+  if (!allowance.allowed) return { text: allowance.reason, sources: [] };
+
+  try {
+    const response = await anthropic.messages.create({
+      model: ANSWER_MODEL,
+      max_tokens: 700,
+      system: [{ type: 'text', text: SUMMARY_SYSTEM, cache_control: { type: 'ephemeral' } }],
+      ...(traitsFor(ANSWER_MODEL).supportsEffort ? { output_config: { effort: EFFORT } } : {}),
+      messages: [
+        { role: 'user', content: `Recent messages in this group chat:\n\n${lines}\n\n---\n\nCatch me up on what I missed.` },
+      ],
+    });
+    recordUsage({ model: ANSWER_MODEL, usage: response.usage, searches: 0 });
+    const text = tidyAnswer(
+      response.content
+        .filter((b) => b.type === 'text')
+        .map((b) => b.text)
+        .join('')
+        .trim()
+    );
+    if (!text) {
+      refund(platform, chatId);
+      return { text: "I couldn't put a summary together — try again in a moment.", sources: [] };
+    }
+    return { text, sources: [] };
+  } catch (err) {
+    refund(platform, chatId);
+    console.error('[assistant] summarize failed:', err.message);
+    return { text: 'Something went wrong summarizing.', sources: [] };
+  }
+}
+
 /** Format for posting into a chat: answer plus a trimmed source list. */
 export function formatAnswer({ text, sources }) {
   if (!sources.length) return text;
