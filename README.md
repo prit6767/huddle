@@ -56,27 +56,21 @@ Without a key the bot says so plainly when asked something rather than guessing.
 
 ## Deploying
 
-**This will not work on GitHub Pages.** It's a Node server, not a static site: the
-frontend calls `/api/*` routes from `src/server.mjs`, and a huddle's state has to be
-shared between everyone in it. Static hosting can do neither, and a client-side
-rewrite would also expose your API key to every visitor.
-
-Any host that runs Node works. A Render blueprint is included:
-
-1. [render.com](https://render.com) → New → Blueprint → connect this repo
-2. Add `ANTHROPIC_API_KEY` in the dashboard (never commit it)
-
-Then point share links at it so the bots post reachable URLs:
+The live site ([huddle-hq.com](https://huddle-hq.com)) runs on **Cloudflare Workers +
+D1** — the website and the Slack / Google Chat / Telegram bots, all on one stack, with
+group state shared in D1 (no sleeping, no ephemeral disk):
 
 ```bash
-HUDDLE_PUBLIC_URL=https://huddle-hq.com
+cd workers && npx wrangler deploy
 ```
 
-Free-tier caveats: the service sleeps after ~15 min idle (first request takes ~30s
-to wake), and the filesystem is ephemeral — `data/huddles.sqlite` is wiped on every
-redeploy, so plans vanish there. Attach a persistent disk (or move to Postgres)
-before anyone relies on it. On any host with a real disk, plans now survive
-restarts out of the box.
+Secrets (the Slack/Google/Telegram tokens and `ANTHROPIC_API_KEY`) are set in the
+Cloudflare dashboard or with `wrangler secret put`, never committed.
+
+The `src/` Node server (`npm start`) is the local dev / self-host path for the
+Discord and iMessage bridges, which aren't on the Workers deploy. Any host that runs
+Node can serve it; set `HUDDLE_PUBLIC_URL=https://huddle-hq.com` so the bots post
+reachable share links.
 
 For a quick temporary link without deploying, tunnel your local server:
 
