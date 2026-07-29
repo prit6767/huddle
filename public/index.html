@@ -290,72 +290,29 @@
           </div>
         </section>
 
-        <!-- --------------------- plan a trip / outing -------------------- -->
-        <section class="band tint reveal" id="trips">
-          <h2 class="band-title">From dinner to a whole trip</h2>
-          <p class="band-sub">
-            The same brain that settles arguments plans the outing — and it scales from a Tuesday
-            dinner to a group weekend away. Say the occasion, everyone talks normally in the chat,
-            and it turns the usual spiral (“where?” “what time?” “is it accessible?” “that's too
-            expensive for me”) into three finalized, bookable options.
-          </p>
-          <div class="feature-grid">
-            <article class="feature">
-              <div class="feature-icon"><span class="brand-mark">◍</span></div>
-              <h3>1 · Start it</h3>
-              <p>
-                <code>/plan Maya's birthday dinner in Portland</code> — or a night out, a team
-                lunch, a weekend trip. Just name the occasion and the city.
-              </p>
-            </article>
-            <article class="feature">
-              <div class="feature-icon"><span class="brand-mark">◍</span></div>
-              <h3>2 · Everyone just talks</h3>
-              <p>
-                “Free Sat after 5,” “~$25,” “my sister's vegetarian,” “grandma uses a walker.” It
-                reads the chat, pulls out each person's constraints, and reacts ✅ — no nagging
-                forms.
-              </p>
-            </article>
-            <article class="feature">
-              <div class="feature-icon"><span class="brand-mark">◍</span></div>
-              <h3>3 · Get 3 bookable plans</h3>
-              <p>
-                It does the arithmetic — the overlap everyone's free, the cheapest ceiling, every
-                dietary and access need — and returns three options with map, booking, and calendar
-                links. Vote right in the chat.
-              </p>
-            </article>
-          </div>
-          <p class="quickadd-note muted">
-            Planning a bigger trip? The same flow handles it: dates instead of an evening, a city
-            instead of a venue — and every option still carries the honest
-            <span style="color: var(--computed); font-weight: 700">✓ computed</span> vs.
-            <span style="color: var(--listed)">⌁ listed</span> labels above, so no one books a
-            place on a claim nobody checked.
-          </p>
-        </section>
-
         <!-- ---------------------------- add it --------------------------- -->
         <section class="band reveal" id="add">
           <h2 class="band-title">Add it to your chat</h2>
+          <p class="band-sub">
+            The easy way: one click and it's in your workspace — no terminal, no tokens, nothing
+            to install. Want to run your own copy instead? That's the second option.
+          </p>
 
           <!-- ---- Path A: hosted bot. Shown only when this instance actually
                publishes invite links, so the button can never go nowhere. ---- -->
           <div class="quickadd" id="quickadd" hidden>
             <div class="quickadd-head">
               <span class="quickadd-badge">No setup</span>
-              <h3>Add it to your team in one click</h3>
+              <h3>One click, and it's in</h3>
               <p class="muted">
-                No terminal, no API key, nothing to install. This instance is already running —
-                click below, approve on the permission screen, and it's in your workspace. Great
-                for a team channel: @mention it to settle a debate and it answers with sources.
+                This instance is already running. Click below, approve on the permission screen,
+                and it's in your channel. Then @mention it to settle a debate and it answers with
+                sources.
               </p>
             </div>
             <div class="quickadd-actions" id="quickadd-actions"></div>
             <p class="quickadd-note muted">
-              It reads the channel for context but only replies when you @mention it — never
-              chatty. Self-hosted, so your conversations stay on infrastructure you control.
+              It reads the channel for context but only replies when you @mention it — never chatty.
             </p>
           </div>
 
@@ -363,20 +320,13 @@
                Everything below (steps + platform cards) lives in the details. -->
           <details class="selfhost" id="selfhost">
             <summary>
-              <span class="selfhost-summary-title">Prefer to self-host?</span>
-              <span class="muted">Run your own bot — about 10 minutes. Tap to expand.</span>
+              <span class="selfhost-summary-title">Prefer to run your own copy?</span>
+              <span class="muted">Self-host — about 10 minutes. Tap to expand.</span>
             </summary>
             <div class="selfhost-inner">
               <p class="band-sub">
                 You hold the keys and the bill, and nothing leaves your machine. Do it once and
                 your bot serves every group you add it to.
-                <a
-                  href="https://render.com/deploy?repo=https://github.com/prit6767/huddle"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >Deploy to Render</a
-                >
-                does steps 1 and 3 for you.
               </p>
 
           <!-- Step 1: the part every platform shares -->
@@ -385,17 +335,13 @@
             <div class="step-body">
               <h3>Get it running</h3>
               <p class="muted">
-                Clone the repo and install. The planner works with no API key at all; add one
-                to unlock the part that answers questions.
+                Clone and install. It works with no API key; add one to unlock the part that
+                answers questions.
               </p>
               <pre class="cmd"><code>git clone https://github.com/prit6767/huddle
 cd huddle &amp;&amp; npm install
 export ANTHROPIC_API_KEY=sk-ant-...   # optional
 npm start                             # → localhost:3000</code></pre>
-              <p class="muted">
-                Leave that running. The badge in this page's header tells you which engine is
-                live — a model name, or <code>heuristic</code> if there's no key.
-              </p>
             </div>
           </div>
 
@@ -405,8 +351,7 @@ npm start                             # → localhost:3000</code></pre>
             <div class="step-body">
               <h3>Create the bot and get a token</h3>
               <p class="muted">
-                Pick your platform. Each one has exactly one step people miss — it's called out
-                in amber.
+                Pick your platform. Each has one step people miss — flagged in amber.
               </p>
 
               <div class="platform-grid">
@@ -497,17 +442,11 @@ npm start                             # → localhost:3000</code></pre>
             <div class="step-body">
               <h3>Start the bot process</h3>
               <p class="muted">
-                In a second terminal, with the token from step 2. It reads the same data as the
-                web app, so a plan started in chat opens in the browser and back again.
+                In a second terminal, with the token from step 2.
               </p>
               <pre class="cmd"><code>TELEGRAM_BOT_TOKEN=... npm run bots
 DISCORD_BOT_TOKEN=...  npm run bots
 ENABLE_IMESSAGE=1      npm run bots</code></pre>
-              <p class="muted">
-                Deployed somewhere public? Add
-                <code>HUDDLE_PUBLIC_URL=https://your-host</code> so the links it posts are
-                reachable by everyone else in the chat.
-              </p>
             </div>
           </div>
 
@@ -517,30 +456,18 @@ ENABLE_IMESSAGE=1      npm run bots</code></pre>
             <div class="step-body">
               <h3>Talk to it</h3>
               <p class="muted">
-                It reads everything for context but answers <b>only</b> when addressed. Four
-                ways to get its attention:
-              </p>
-              <ul class="usage-list">
-                <li><code>@YourBot</code> who won the game last night?</li>
-                <li><code>huddle,</code> what's the exchange rate right now?</li>
-                <li><code>/ask</code> is this restaurant still open</li>
-                <li>…or just reply to one of its messages</li>
-              </ul>
-              <p class="muted">
-                To plan something: <code>/plan dinner in Austin</code>, then everyone talks
-                normally — it reacts ✅ as it picks up each person. <code>/status</code> shows
-                who's answered, <code>/go</code> returns the three options.
-                <code>/usage</code> shows what today cost, <code>/forget</code> drops the
-                context it's holding.
+                It reads along for context but answers <b>only</b> when addressed — @mention it,
+                reply to it, or start with <code>huddle,</code>. To plan something:
+                <code>/plan dinner in Austin</code>, then everyone talks normally and it reacts ✅
+                as it picks up each person; <code>/go</code> returns three options.
               </p>
             </div>
           </div>
 
               <p class="friction">
-                WhatsApp has no group-bot API at all, so there's no honest way to do it — the
-                unofficial workaround gets phone numbers banned. Paste a huddle's invite link into
-                WhatsApp instead: it unfurls into a card and everyone taps through. Works in every
-                chat app on earth, zero setup.
+                No WhatsApp: it has no group-bot API, and the unofficial workaround gets numbers
+                banned. Paste a huddle's invite link into any chat instead — it unfurls into a card
+                everyone taps through. Zero setup, works everywhere.
               </p>
             </div>
           </details>

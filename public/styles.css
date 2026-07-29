@@ -145,7 +145,8 @@ code {
   background: var(--surface-sunk);
   border-radius: 8px;
   padding: 2px 6px;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 a {
   color: var(--link);
@@ -428,6 +429,7 @@ main {
   max-width: var(--maxw);
   margin: 0 auto;
   padding: 0 clamp(var(--s4), 5vw, var(--s7)) var(--s7);
+  overflow-x: clip; /* contain decorative band/hero backgrounds; no phantom scrollbar */
 }
 
 /* =============================================================== buttons
