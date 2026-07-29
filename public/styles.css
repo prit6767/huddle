@@ -389,6 +389,12 @@ html[data-boot] .bootlog {
 .brand-mark {
   color: var(--coral);
 }
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: block;
+}
 .topnav {
   display: flex;
   align-items: center;
@@ -1357,10 +1363,10 @@ select:focus {
   right: -8%;
   width: 62%;
   height: 95%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--coral) 26%, transparent), transparent 70%);
-  filter: blur(20px);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--coral) 12%, transparent), transparent 72%);
+  filter: blur(26px);
   pointer-events: none;
-  opacity: 0.75;
+  opacity: 0.5;
 }
 
 /* --- lift the chat demo off the page and let it breathe --- */
@@ -1477,10 +1483,8 @@ select:focus {
 
 /* --- gradient accent on the hero headline emphasis --- */
 .hero h1 em {
-  background: linear-gradient(120deg, var(--coral), color-mix(in srgb, var(--coral) 55%, #e8a33e));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* plain coral — a gradient-clipped headline is a generic "AI landing page" tell */
+  font-style: normal;
   color: var(--coral);
 }
 
