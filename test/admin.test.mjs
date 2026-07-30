@@ -39,6 +39,11 @@ function seed(db) {
   u.run('2026-07-01', 'telegram:99', 4);
   db._sql.prepare('INSERT INTO installs (team_id, team_name, bot_token, installed_at) VALUES (?, ?, ?, ?)').run('T1', 'Acme', 'x', '2026-07-20T00:00:00Z');
   db._sql.prepare('INSERT INTO huddles (id, created_at, data) VALUES (?, ?, ?)').run('h1', '2026-07-01T00:00:00Z', '{}');
+  const su = db._sql.prepare('INSERT INTO seen_users (user_key, platform, first_seen, last_seen) VALUES (?, ?, ?, ?)');
+  su.run('slack:aaa', 'slack', today + 'T00:00:00', today + 'T10:00:00');       // active today
+  su.run('slack:bbb', 'slack', today + 'T00:00:00', today + 'T10:00:00');       // active today
+  su.run('telegram:ccc', 'telegram', today + 'T00:00:00', today + 'T10:00:00'); // active today
+  su.run('google:ddd', 'google', '2026-06-01T00:00:00', '2026-06-02T00:00:00'); // old — outside 30d
 }
 
 let env;
@@ -116,6 +121,17 @@ describe('admin aggregation', () => {
     assert.equal(s.retention.activeChats30d, 4);
     // Only slack:T1:C1 appears on 2 separate days.
     assert.equal(s.retention.returningChats, 1);
+  });
+
+  test('counts distinct users, overall and per platform', async () => {
+    const s = await adminStats(env);
+    assert.equal(s.totals.users, 4); // 2 slack + 1 telegram + 1 google
+    const byName = Object.fromEntries(s.byPlatform.map((p) => [p.platform, p]));
+    assert.equal(byName.slack.users, 2);
+    assert.equal(byName.telegram.users, 1);
+    // active-user windows: the google user is 2 months stale, so out of 30d
+    assert.equal(s.retention.users30d, 3);
+    assert.equal(s.retention.users7d, 3);
   });
 
   test('busiest chats rank by volume and never leak the raw chat_key', async () => {

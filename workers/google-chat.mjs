@@ -30,6 +30,7 @@ import {
   claimQuestion,
   firstTimeSeeing,
   isSummarizeCommand,
+  recordUser,
   PER_CHAT_DAILY,
   WELCOME,
 } from './chat-state.mjs';
@@ -110,6 +111,7 @@ export async function handleGoogleChat(request, env) {
   // Dedup on the message id in case Google retries.
   if (!(await firstTimeSeeing(env.DB, msg.name))) return new Response('', { status: 200 });
 
+  await recordUser(env.DB, 'google', space, event.user?.name);
   const context = transcriptOf(await loadContext(env.DB, key));
   await recordMessage(env.DB, key, name, question);
 

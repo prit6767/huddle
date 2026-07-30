@@ -54,6 +54,17 @@ CREATE TABLE IF NOT EXISTS usage (
   PRIMARY KEY (day, chat_key)
 );
 
+-- Distinct people who have actually talked to the bot — the "how many users"
+-- metric. Privacy-preserving: we store a one-way HASH of platform+scope+userId,
+-- never the raw id, never a name, never message content. It exists only to
+-- count unique people and when they were last active.
+CREATE TABLE IF NOT EXISTS seen_users (
+  user_key   TEXT PRIMARY KEY,   -- sha256(platform:scope:userId), truncated
+  platform   TEXT NOT NULL,
+  first_seen TEXT NOT NULL,
+  last_seen  TEXT NOT NULL
+);
+
 -- Slack retries an unacknowledged event; a retry that re-answers costs money.
 -- A short-lived seen-events table dedupes them across isolates.
 CREATE TABLE IF NOT EXISTS seen_events (

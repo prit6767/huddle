@@ -30,6 +30,7 @@ import {
   getBackground,
   setBackground,
   withBackground,
+  recordUser,
   PER_CHAT_DAILY,
   CONTEXT_MESSAGES,
 } from './chat-state.mjs';
@@ -206,6 +207,7 @@ async function processEvent(env, body) {
     return;
   }
 
+  await recordUser(db, 'slack', body.team_id, event.user);
   const context = withBackground(await getBackground(db, key), transcriptOf(await loadContext(db, key)));
   await recordMessage(db, key, name, cleaned);
 

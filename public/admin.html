@@ -61,7 +61,7 @@
         <div class="cards" id="retention"></div>
 
         <h2>By platform</h2>
-        <table id="platforms"><thead><tr><th>Platform</th><th class="num">Active chats</th><th class="num">Questions</th></tr></thead><tbody></tbody></table>
+        <table id="platforms"><thead><tr><th>Platform</th><th class="num">Users</th><th class="num">Active chats</th><th class="num">Questions</th></tr></thead><tbody></tbody></table>
 
         <h2>Busiest chats</h2>
         <table id="topchats"><thead><tr><th>Platform</th><th class="num">Questions</th><th class="num">Active days</th></tr></thead><tbody></tbody></table>
@@ -73,9 +73,10 @@
         <table id="installs"><thead><tr><th>Workspace</th><th class="num">Installed</th></tr></thead><tbody></tbody></table>
 
         <p class="muted" style="margin-top:28px;font-size:13px">
-          "Active chats" and "workspaces" are the honest reach numbers — Huddle
-          doesn't track individual end users (chat context is bounded and never
-          stored long-term), so there are no per-person counts to show.
+          "Users" counts distinct people who have actually talked to the bot — stored
+          only as a one-way hash of their ID, never a name, raw ID, or message. Someone
+          who uses it on two platforms counts once per platform. Message context stays
+          bounded and disposable; these are the only per-person numbers kept.
         </p>
       </div>
     </div>
@@ -116,15 +117,18 @@
         $('#asof').textContent = 'As of ' + new Date(d.generatedAt).toLocaleString();
         const t = d.totals;
         $('#cards').innerHTML = [
+          [t.users, 'Users (all-time)'],
           [t.todayQuestions, 'Questions today'],
           [t.totalQuestions, 'Questions all-time'],
           [t.activeChats, 'Active chats'],
+          [t.avgQuestionsPerChat, 'Avg questions / chat'],
           [t.workspaces, 'Slack workspaces'],
-          [t.huddles, 'Plans created'],
         ].map(([n, l]) => `<div class="card"><div class="n">${num(n)}</div><div class="l">${l}</div></div>`).join('');
 
         const r = d.retention || {};
         $('#retention').innerHTML = [
+          [r.users7d, 'Users · 7d'],
+          [r.users30d, 'Users · 30d'],
           [r.activeChats7d, 'Active chats · 7d'],
           [r.activeChats30d, 'Active chats · 30d'],
           [r.returningChats, 'Returning chats (2+ days)'],
@@ -135,8 +139,8 @@
         ).join('') || '<tr><td class="muted" colspan="3">No activity yet.</td></tr>';
 
         $('#platforms tbody').innerHTML = (d.byPlatform || []).map(
-          (p) => `<tr><td>${p.platform}</td><td class="num">${num(p.chats)}</td><td class="num">${num(p.questions)}</td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="3">No activity yet.</td></tr>';
+          (p) => `<tr><td>${p.platform}</td><td class="num">${num(p.users)}</td><td class="num">${num(p.chats)}</td><td class="num">${num(p.questions)}</td></tr>`
+        ).join('') || '<tr><td class="muted" colspan="4">No activity yet.</td></tr>';
 
         const max = Math.max(1, ...(d.daily || []).map((r) => r.questions));
         $('#daily tbody').innerHTML = (d.daily || []).map(

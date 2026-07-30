@@ -66,16 +66,20 @@ export async function adminStats(env) {
   const d7 = cut(6);
   const d30 = cut(29);
 
-  const [workspaces, totalQ, todayQ, activeChats, huddles, active7, active30, returning] = await Promise.all([
-    one('SELECT COUNT(*) AS n FROM installs'),
-    one('SELECT COALESCE(SUM(used), 0) AS n FROM usage'),
-    one('SELECT COALESCE(SUM(used), 0) AS n FROM usage WHERE day = ?', today),
-    one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage'),
-    one('SELECT COUNT(*) AS n FROM huddles'),
-    one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage WHERE day >= ?', d7),
-    one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage WHERE day >= ?', d30),
-    one('SELECT COUNT(*) AS n FROM (SELECT chat_key FROM usage GROUP BY chat_key HAVING COUNT(DISTINCT day) >= 2)'),
-  ]);
+  const [workspaces, totalQ, todayQ, activeChats, huddles, active7, active30, returning, users, users7, users30] =
+    await Promise.all([
+      one('SELECT COUNT(*) AS n FROM installs'),
+      one('SELECT COALESCE(SUM(used), 0) AS n FROM usage'),
+      one('SELECT COALESCE(SUM(used), 0) AS n FROM usage WHERE day = ?', today),
+      one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage'),
+      one('SELECT COUNT(*) AS n FROM huddles'),
+      one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage WHERE day >= ?', d7),
+      one('SELECT COUNT(DISTINCT chat_key) AS n FROM usage WHERE day >= ?', d30),
+      one('SELECT COUNT(*) AS n FROM (SELECT chat_key FROM usage GROUP BY chat_key HAVING COUNT(DISTINCT day) >= 2)'),
+      one('SELECT COUNT(*) AS n FROM seen_users'),
+      one('SELECT COUNT(*) AS n FROM seen_users WHERE last_seen >= ?', `${d7}T00:00:00`),
+      one('SELECT COUNT(*) AS n FROM seen_users WHERE last_seen >= ?', `${d30}T00:00:00`),
+    ]);
 
   // Busiest chats — platform + volume + how many days they came back. Raw
   // chat_key (which carries channel/team ids) is deliberately NOT exposed.
@@ -84,10 +88,15 @@ export async function adminStats(env) {
      FROM usage GROUP BY chat_key ORDER BY questions DESC LIMIT 10`
   );
 
+  // Distinct users per platform, merged onto the platform breakdown below.
+  const usersByPlatform = await rows('SELECT platform, COUNT(*) AS users FROM seen_users GROUP BY platform');
+  const upMap = Object.fromEntries(usersByPlatform.map((r) => [r.platform, r.users]));
+
   const byPlatform = await rows(
     `SELECT ${PLATFORM_EXPR} AS platform, COUNT(DISTINCT chat_key) AS chats, COALESCE(SUM(used), 0) AS questions
      FROM usage GROUP BY platform ORDER BY questions DESC`
   );
+  byPlatform.forEach((p) => (p.users = upMap[p.platform] || 0));
   const daily = await rows(
     `SELECT day, COALESCE(SUM(used), 0) AS questions, COUNT(DISTINCT chat_key) AS chats
      FROM usage GROUP BY day ORDER BY day DESC LIMIT 14`
@@ -98,13 +107,17 @@ export async function adminStats(env) {
 
   return {
     totals: {
+      users: users.n || 0,
       workspaces: workspaces.n || 0,
       activeChats: activeChats.n || 0,
       totalQuestions: totalQ.n || 0,
       todayQuestions: todayQ.n || 0,
       huddles: huddles.n || 0,
+      avgQuestionsPerChat: activeChats.n ? Math.round(((totalQ.n || 0) / activeChats.n) * 10) / 10 : 0,
     },
     retention: {
+      users7d: users7.n || 0,
+      users30d: users30.n || 0,
       activeChats7d: active7.n || 0,
       activeChats30d: active30.n || 0,
       returningChats: returning.n || 0,

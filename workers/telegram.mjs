@@ -20,7 +20,7 @@
 //   5. Add the bot to a group, or DM it. @mention it, reply to it, or start with
 //      "huddle,".
 import { formatAnswer, summarize } from '../src/assistant.mjs';
-import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, isSummarizeCommand, PER_CHAT_DAILY, WELCOME } from './chat-state.mjs';
+import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, isSummarizeCommand, recordUser, PER_CHAT_DAILY, WELCOME } from './chat-state.mjs';
 
 const API = 'https://api.telegram.org';
 const WAKE = 'huddle';
@@ -101,6 +101,7 @@ async function processUpdate(env, update) {
   }
 
   const question = cleanQuestion(text, bot);
+  await recordUser(env.DB, 'telegram', chatId, msg.from?.id);
   const context = transcriptOf(await loadContext(env.DB, key));
   await recordMessage(env.DB, key, name, question || text);
 

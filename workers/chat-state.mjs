@@ -5,6 +5,7 @@
 // Keyed by a caller-supplied chat key like "telegram:<chatId>" or
 // "slack:<team>:<channel>" — the platform scopes itself so two platforms (or
 // two workspaces) never share a buffer, a cap, or a dedup entry.
+import { createHash } from 'node:crypto';
 import { ask } from '../src/assistant.mjs';
 
 export const CONTEXT_MESSAGES = 20;
@@ -96,6 +97,28 @@ export async function answerWithCache(env, { question, context, platform, chatId
       .run();
   }
   return answer;
+}
+
+/**
+ * Count a distinct person who talked to the bot — as a one-way hash, so we can
+ * report "how many users" without ever storing a raw id, a name, or a message.
+ * `scope` is the workspace/chat so the same person isn't double-counted across
+ * channels they share.
+ */
+export async function recordUser(db, platform, scope, userId) {
+  if (!userId) return;
+  const key =
+    platform +
+    ':' +
+    createHash('sha256').update(`${platform}:${scope}:${userId}`).digest('hex').slice(0, 24);
+  const now = new Date().toISOString();
+  await db
+    .prepare(
+      `INSERT INTO seen_users (user_key, platform, first_seen, last_seen) VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_key) DO UPDATE SET last_seen = excluded.last_seen`
+    )
+    .bind(key, platform, now, now)
+    .run();
 }
 
 /** The compressed "before I joined" note for a channel, or null. */
