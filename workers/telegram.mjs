@@ -19,8 +19,8 @@
 //      https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://huddle-hq.com/telegram/webhook&secret_token=<SECRET>
 //   5. Add the bot to a group, or DM it. @mention it, reply to it, or start with
 //      "huddle,".
-import { formatAnswer, summarize } from '../src/assistant.mjs';
-import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, isSummarizeCommand, recordUser, PER_CHAT_DAILY, WELCOME } from './chat-state.mjs';
+import { formatAnswer } from '../src/assistant.mjs';
+import { loadContext, recordMessage, transcriptOf, claimQuestion, firstTimeSeeing, answerWithCache, isSummarizeCommand, recordUser, summarizeWithSpend, PER_CHAT_DAILY, WELCOME } from './chat-state.mjs';
 
 const API = 'https://api.telegram.org';
 const WAKE = 'huddle';
@@ -122,7 +122,7 @@ async function processUpdate(env, update) {
 
   // "/summarize" / "catch me up": recap the context we already hold, no search.
   if (isSummarizeCommand(question)) {
-    const summary = await summarize({ transcript: context, platform: 'telegram', chatId: key });
+    const summary = await summarizeWithSpend(env, { transcript: context, platform: 'telegram', chatId: key });
     await tg(token, 'sendMessage', {
       chat_id: chatId,
       text: summary.text,

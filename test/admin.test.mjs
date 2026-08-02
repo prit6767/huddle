@@ -56,8 +56,9 @@ function seed(db) {
   su.run('telegram:ccc', 'telegram', today + 'T00:00:00', today + 'T10:00:00'); // active today
   su.run('google:ddd', 'google', ANCIENT + 'T00:00:00', ANCIENT + 'T00:00:00'); // outside 30d
   const sp = db._sql.prepare('INSERT INTO spend (day, chat_key, input_tokens, output_tokens, searches, calls) VALUES (?, ?, ?, ?, ?, ?)');
-  sp.run(today, 'slack:T1:C1', 1_000_000, 200_000, 3, 5); // today's spend on slack
-  sp.run(OLD, 'telegram:99', 500_000, 100_000, 1, 2);
+  sp.run(today, 'slack:T1:C1', 1_000_000, 200_000, 3, 5); // today's spend on slack: 5 fresh calls
+  sp.run(OLD, 'telegram:99', 500_000, 100_000, 1, 2);     // 2 fresh calls
+  db._sql.prepare('INSERT INTO stat_counters (name, n) VALUES (?, ?)').run('cache_hits', 6);
 }
 
 let env;
@@ -158,6 +159,19 @@ describe('admin aggregation', () => {
     const byName = Object.fromEntries(s.byPlatform.map((p) => [p.platform, p]));
     assert.equal(byName.slack.usd, 2.03);
     assert.equal(byName.telegram.usd, 1.01);
+  });
+
+  test('cache hit rate = hits / (hits + fresh calls)', async () => {
+    const s = await adminStats(env);
+    // 6 cache hits, 7 fresh calls (5 + 2) → 6/13 = 46%
+    assert.equal(s.totals.cacheHitRate, 46);
+  });
+
+  test('new users per day is merged into the daily rollup', async () => {
+    const s = await adminStats(env);
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRow = s.daily.find((r) => r.day === today);
+    assert.equal(todayRow.newUsers, 3); // aaa, bbb, ccc first-seen today
   });
 
   test('busiest chats rank by volume and never leak the raw chat_key', async () => {

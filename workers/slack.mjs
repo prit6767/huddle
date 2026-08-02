@@ -16,7 +16,7 @@
 import { randomBytes } from 'node:crypto';
 
 import { verifySlackSignature } from '../src/slack-verify.mjs';
-import { formatAnswer, summarize } from '../src/assistant.mjs';
+import { formatAnswer } from '../src/assistant.mjs';
 import { llmAvailable } from '../src/llm.mjs';
 import { installs } from './store-d1.mjs';
 import {
@@ -31,6 +31,7 @@ import {
   setBackground,
   withBackground,
   recordUser,
+  summarizeWithSpend,
   PER_CHAT_DAILY,
   CONTEXT_MESSAGES,
 } from './chat-state.mjs';
@@ -172,7 +173,7 @@ async function backfillChannel(env, token, channel, key) {
     if (transcript.length + line.length > 24000) break;
     transcript = line + transcript; // prepend to keep chronological order
   }
-  const bg = await summarize({ transcript, platform: 'slack', chatId: key });
+  const bg = await summarizeWithSpend(env, { transcript, platform: 'slack', chatId: key });
   if (bg?.text) await setBackground(env.DB, key, bg.text);
 }
 
@@ -227,7 +228,7 @@ async function processEvent(env, body) {
 
   // "/summarize" / "catch me up": recap the context we already hold, no search.
   if (isSummarizeCommand(cleaned)) {
-    const summary = await summarize({ transcript: context, platform: 'slack', chatId: key });
+    const summary = await summarizeWithSpend(env, { transcript: context, platform: 'slack', chatId: key });
     await slackPost(token, 'chat.postMessage', {
       channel: event.channel,
       thread_ts: threadTs,

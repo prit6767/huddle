@@ -6,7 +6,7 @@
 // "slack:<team>:<channel>" — the platform scopes itself so two platforms (or
 // two workspaces) never share a buffer, a cap, or a dedup entry.
 import { createHash } from 'node:crypto';
-import { ask } from '../src/assistant.mjs';
+import { ask, summarize } from '../src/assistant.mjs';
 
 export const CONTEXT_MESSAGES = 20;
 export const PER_CHAT_DAILY = 50;
@@ -81,7 +81,9 @@ export async function answerWithCache(env, { question, context, platform, chatId
   const row = await env.DB.prepare('SELECT answer, expires_at FROM answer_cache WHERE cache_key = ?').bind(key).first();
   if (row && row.expires_at > now) {
     try {
-      return { ...JSON.parse(row.answer), cached: true };
+      const hit = { ...JSON.parse(row.answer), cached: true };
+      await bumpCounter(env.DB, 'cache_hits'); // a free answer — worth measuring
+      return hit;
     } catch {
       /* corrupt row — fall through and re-answer */
     }
@@ -107,6 +109,30 @@ export async function answerWithCache(env, { question, context, platform, chatId
  * `scope` is the workspace/chat so the same person isn't double-counted across
  * channels they share.
  */
+/** Increment a durable named counter (e.g. "cache_hits"). */
+export async function bumpCounter(db, name, by = 1) {
+  await db
+    .prepare(
+      `INSERT INTO stat_counters (name, n) VALUES (?, ?)
+       ON CONFLICT(name) DO UPDATE SET n = n + excluded.n`
+    )
+    .bind(name, by)
+    .run();
+}
+
+/** Read a durable named counter, 0 if unset. */
+export async function getCounter(db, name) {
+  const row = await db.prepare('SELECT n FROM stat_counters WHERE name = ?').bind(name).first();
+  return row?.n || 0;
+}
+
+/** summarize(), with its token cost recorded to the durable spend ledger. */
+export async function summarizeWithSpend(env, { transcript, platform, chatId }) {
+  const out = await summarize({ transcript, platform, chatId });
+  if (out?.usage) await recordSpend(env.DB, chatId, out.usage, 0);
+  return out;
+}
+
 export async function recordSpend(db, key, usage, searches = 0) {
   if (!usage) return;
   const day = today();

@@ -67,7 +67,7 @@
         <table id="topchats"><thead><tr><th>Platform</th><th class="num">Questions</th><th class="num">Active days</th></tr></thead><tbody></tbody></table>
 
         <h2>Questions per day (last 14)</h2>
-        <table id="daily"><thead><tr><th>Day</th><th class="num">Questions</th><th class="num">Chats</th><th class="num">Est. spend</th><th style="width:30%"></th></tr></thead><tbody></tbody></table>
+        <table id="daily"><thead><tr><th>Day</th><th class="num">Questions</th><th class="num">Chats</th><th class="num">New users</th><th class="num">Est. spend</th><th style="width:25%"></th></tr></thead><tbody></tbody></table>
 
         <h2>Slack workspaces</h2>
         <table id="installs"><thead><tr><th>Workspace</th><th class="num">Installed</th></tr></thead><tbody></tbody></table>
@@ -125,6 +125,7 @@
           [num(t.totalQuestions), 'Questions all-time'],
           [num(t.activeChats), 'Active chats'],
           [num(t.avgQuestionsPerChat), 'Avg questions / chat'],
+          [num(t.cacheHitRate) + '%', 'Cache hit rate'],
           [num(t.workspaces), 'Slack workspaces'],
         ].map(([n, l]) => `<div class="card"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
 
@@ -147,8 +148,8 @@
 
         const max = Math.max(1, ...(d.daily || []).map((r) => r.questions));
         $('#daily tbody').innerHTML = (d.daily || []).map(
-          (r) => `<tr><td>${r.day}</td><td class="num">${num(r.questions)}</td><td class="num">${num(r.chats)}</td><td class="num">${usd(r.usd)}</td><td><div class="bar" style="width:${(r.questions / max) * 100}%"></div></td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="5">No activity yet.</td></tr>';
+          (r) => `<tr><td>${r.day}</td><td class="num">${num(r.questions)}</td><td class="num">${num(r.chats)}</td><td class="num">${num(r.newUsers)}</td><td class="num">${usd(r.usd)}</td><td><div class="bar" style="width:${(r.questions / max) * 100}%"></div></td></tr>`
+        ).join('') || '<tr><td class="muted" colspan="6">No activity yet.</td></tr>';
 
         $('#installs tbody').innerHTML = (d.installs || []).map(
           (i) => `<tr><td>${(i.team_name || '—')}</td><td class="num">${(i.installed_at || '').slice(0, 10)}</td></tr>`

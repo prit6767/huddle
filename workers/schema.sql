@@ -78,6 +78,13 @@ CREATE TABLE IF NOT EXISTS spend (
   PRIMARY KEY (day, chat_key)
 );
 
+-- Small durable counters (e.g. cache_hits) — cheap product metrics that don't
+-- fit the per-day/per-chat tables. One row per named counter.
+CREATE TABLE IF NOT EXISTS stat_counters (
+  name TEXT PRIMARY KEY,
+  n    INTEGER NOT NULL DEFAULT 0
+);
+
 -- Slack retries an unacknowledged event; a retry that re-answers costs money.
 -- A short-lived seen-events table dedupes them across isolates.
 CREATE TABLE IF NOT EXISTS seen_events (

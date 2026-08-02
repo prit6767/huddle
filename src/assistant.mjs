@@ -242,7 +242,13 @@ export async function summarize({ transcript, platform = 'unknown', chatId = 'un
       refund(platform, chatId);
       return { text: "I couldn't put a summary together — try again in a moment.", sources: [] };
     }
-    return { text, sources: [] };
+    return {
+      text,
+      sources: [],
+      usage: { input_tokens: response.usage?.input_tokens || 0, output_tokens: response.usage?.output_tokens || 0 },
+      model: ANSWER_MODEL,
+      searches: 0,
+    };
   } catch (err) {
     refund(platform, chatId);
     console.error('[assistant] summarize failed:', err.message);

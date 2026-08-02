@@ -12,6 +12,7 @@
 import { timingSafeEqual } from 'node:crypto';
 
 import { estimateSpendUsd } from '../src/budget.mjs';
+import { getCounter } from './chat-state.mjs';
 
 export function adminConfigured(env) {
   return Boolean(env.HUDDLE_ADMIN_USER && env.HUDDLE_ADMIN_PASS);
@@ -110,6 +111,21 @@ export async function adminStats(env) {
   );
   const spendMap = Object.fromEntries(spendByPlatform.map((r) => [r.platform, usd(r)]));
 
+  // Answer-cache hit rate: cached answers cost nothing, so this is money saved.
+  // Denominator is cache hits + fresh Q&A calls (the ones that reached Claude).
+  const [freshCalls, cacheHits] = await Promise.all([
+    one('SELECT COALESCE(SUM(calls),0) AS n FROM spend'),
+    getCounter(env.DB, 'cache_hits'),
+  ]);
+  const answers = (cacheHits || 0) + (freshCalls.n || 0);
+  const cacheHitRate = answers ? Math.round(((cacheHits || 0) / answers) * 100) : 0;
+
+  // New users per day (from first_seen), merged into the daily table below.
+  const newUsersByDay = await rows(
+    'SELECT substr(first_seen, 1, 10) AS day, COUNT(*) AS n FROM seen_users GROUP BY day'
+  );
+  const nuMap = Object.fromEntries(newUsersByDay.map((r) => [r.day, r.n]));
+
   const byPlatform = await rows(
     `SELECT ${PLATFORM_EXPR} AS platform, COUNT(DISTINCT chat_key) AS chats, COALESCE(SUM(used), 0) AS questions
      FROM usage GROUP BY platform ORDER BY questions DESC`
@@ -126,7 +142,10 @@ export async function adminStats(env) {
     'SELECT day, COALESCE(SUM(input_tokens),0) i, COALESCE(SUM(output_tokens),0) o, COALESCE(SUM(searches),0) s FROM spend GROUP BY day'
   );
   const dsMap = Object.fromEntries(dailySpend.map((r) => [r.day, usd(r)]));
-  daily.forEach((r) => (r.usd = dsMap[r.day] || 0));
+  daily.forEach((r) => {
+    r.usd = dsMap[r.day] || 0;
+    r.newUsers = nuMap[r.day] || 0;
+  });
   const installs = await rows(
     'SELECT team_name, installed_at FROM installs ORDER BY installed_at DESC LIMIT 50'
   );
@@ -142,6 +161,7 @@ export async function adminStats(env) {
       avgQuestionsPerChat: activeChats.n ? Math.round(((totalQ.n || 0) / activeChats.n) * 10) / 10 : 0,
       spendUsd: usd(spendAll),
       spendTodayUsd: usd(spendToday),
+      cacheHitRate: cacheHitRate,
     },
     retention: {
       users7d: users7.n || 0,
