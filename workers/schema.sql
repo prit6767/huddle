@@ -65,6 +65,19 @@ CREATE TABLE IF NOT EXISTS seen_users (
   last_seen  TEXT NOT NULL
 );
 
+-- Durable spend ledger. The in-memory ledger in budget.mjs is per-isolate, so
+-- on Workers it never accumulates. This persists the real token/search usage of
+-- each (non-cached) answer, per day and chat, so the admin can show estimated $.
+CREATE TABLE IF NOT EXISTS spend (
+  day           TEXT NOT NULL,
+  chat_key      TEXT NOT NULL,
+  input_tokens  INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  searches      INTEGER NOT NULL DEFAULT 0,
+  calls         INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, chat_key)
+);
+
 -- Slack retries an unacknowledged event; a retry that re-answers costs money.
 -- A short-lived seen-events table dedupes them across isolates.
 CREATE TABLE IF NOT EXISTS seen_events (

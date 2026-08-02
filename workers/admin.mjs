@@ -11,6 +11,8 @@
 
 import { timingSafeEqual } from 'node:crypto';
 
+import { estimateSpendUsd } from '../src/budget.mjs';
+
 export function adminConfigured(env) {
   return Boolean(env.HUDDLE_ADMIN_USER && env.HUDDLE_ADMIN_PASS);
 }
@@ -92,15 +94,39 @@ export async function adminStats(env) {
   const usersByPlatform = await rows('SELECT platform, COUNT(*) AS users FROM seen_users GROUP BY platform');
   const upMap = Object.fromEntries(usersByPlatform.map((r) => [r.platform, r.users]));
 
+  // Spend ledger → estimated USD. Tokens are summed in D1; pricing is applied
+  // here from the configured answer model's published rates (an estimate).
+  const usd = (r) =>
+    Math.round(
+      estimateSpendUsd({ inputTokens: r.i || 0, outputTokens: r.o || 0, searches: r.s || 0 }).usd * 100
+    ) / 100;
+  const [spendAll, spendToday] = await Promise.all([
+    one('SELECT COALESCE(SUM(input_tokens),0) i, COALESCE(SUM(output_tokens),0) o, COALESCE(SUM(searches),0) s FROM spend'),
+    one('SELECT COALESCE(SUM(input_tokens),0) i, COALESCE(SUM(output_tokens),0) o, COALESCE(SUM(searches),0) s FROM spend WHERE day = ?', today),
+  ]);
+  const spendByPlatform = await rows(
+    `SELECT ${PLATFORM_EXPR} AS platform, COALESCE(SUM(input_tokens),0) i, COALESCE(SUM(output_tokens),0) o, COALESCE(SUM(searches),0) s
+     FROM spend GROUP BY platform`
+  );
+  const spendMap = Object.fromEntries(spendByPlatform.map((r) => [r.platform, usd(r)]));
+
   const byPlatform = await rows(
     `SELECT ${PLATFORM_EXPR} AS platform, COUNT(DISTINCT chat_key) AS chats, COALESCE(SUM(used), 0) AS questions
      FROM usage GROUP BY platform ORDER BY questions DESC`
   );
-  byPlatform.forEach((p) => (p.users = upMap[p.platform] || 0));
+  byPlatform.forEach((p) => {
+    p.users = upMap[p.platform] || 0;
+    p.usd = spendMap[p.platform] || 0;
+  });
   const daily = await rows(
     `SELECT day, COALESCE(SUM(used), 0) AS questions, COUNT(DISTINCT chat_key) AS chats
      FROM usage GROUP BY day ORDER BY day DESC LIMIT 14`
   );
+  const dailySpend = await rows(
+    'SELECT day, COALESCE(SUM(input_tokens),0) i, COALESCE(SUM(output_tokens),0) o, COALESCE(SUM(searches),0) s FROM spend GROUP BY day'
+  );
+  const dsMap = Object.fromEntries(dailySpend.map((r) => [r.day, usd(r)]));
+  daily.forEach((r) => (r.usd = dsMap[r.day] || 0));
   const installs = await rows(
     'SELECT team_name, installed_at FROM installs ORDER BY installed_at DESC LIMIT 50'
   );
@@ -114,6 +140,8 @@ export async function adminStats(env) {
       todayQuestions: todayQ.n || 0,
       huddles: huddles.n || 0,
       avgQuestionsPerChat: activeChats.n ? Math.round(((totalQ.n || 0) / activeChats.n) * 10) / 10 : 0,
+      spendUsd: usd(spendAll),
+      spendTodayUsd: usd(spendToday),
     },
     retention: {
       users7d: users7.n || 0,

@@ -61,13 +61,13 @@
         <div class="cards" id="retention"></div>
 
         <h2>By platform</h2>
-        <table id="platforms"><thead><tr><th>Platform</th><th class="num">Users</th><th class="num">Active chats</th><th class="num">Questions</th></tr></thead><tbody></tbody></table>
+        <table id="platforms"><thead><tr><th>Platform</th><th class="num">Users</th><th class="num">Active chats</th><th class="num">Questions</th><th class="num">Est. spend</th></tr></thead><tbody></tbody></table>
 
         <h2>Busiest chats</h2>
         <table id="topchats"><thead><tr><th>Platform</th><th class="num">Questions</th><th class="num">Active days</th></tr></thead><tbody></tbody></table>
 
         <h2>Questions per day (last 14)</h2>
-        <table id="daily"><thead><tr><th>Day</th><th class="num">Questions</th><th class="num">Chats</th><th style="width:40%"></th></tr></thead><tbody></tbody></table>
+        <table id="daily"><thead><tr><th>Day</th><th class="num">Questions</th><th class="num">Chats</th><th class="num">Est. spend</th><th style="width:30%"></th></tr></thead><tbody></tbody></table>
 
         <h2>Slack workspaces</h2>
         <table id="installs"><thead><tr><th>Workspace</th><th class="num">Installed</th></tr></thead><tbody></tbody></table>
@@ -85,6 +85,7 @@
       const $ = (s) => document.querySelector(s);
       const KEY = 'huddle:admin:auth'; // base64(user:pass), session-scoped
       const num = (n) => (n ?? 0).toLocaleString();
+      const usd = (n) => '$' + (n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       function showGate(msg) {
         $('#gate').hidden = false;
@@ -117,13 +118,15 @@
         $('#asof').textContent = 'As of ' + new Date(d.generatedAt).toLocaleString();
         const t = d.totals;
         $('#cards').innerHTML = [
-          [t.users, 'Users (all-time)'],
-          [t.todayQuestions, 'Questions today'],
-          [t.totalQuestions, 'Questions all-time'],
-          [t.activeChats, 'Active chats'],
-          [t.avgQuestionsPerChat, 'Avg questions / chat'],
-          [t.workspaces, 'Slack workspaces'],
-        ].map(([n, l]) => `<div class="card"><div class="n">${num(n)}</div><div class="l">${l}</div></div>`).join('');
+          [num(t.users), 'Users (all-time)'],
+          [usd(t.spendTodayUsd), 'Est. spend today'],
+          [usd(t.spendUsd), 'Est. spend all-time'],
+          [num(t.todayQuestions), 'Questions today'],
+          [num(t.totalQuestions), 'Questions all-time'],
+          [num(t.activeChats), 'Active chats'],
+          [num(t.avgQuestionsPerChat), 'Avg questions / chat'],
+          [num(t.workspaces), 'Slack workspaces'],
+        ].map(([n, l]) => `<div class="card"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
 
         const r = d.retention || {};
         $('#retention').innerHTML = [
@@ -139,13 +142,13 @@
         ).join('') || '<tr><td class="muted" colspan="3">No activity yet.</td></tr>';
 
         $('#platforms tbody').innerHTML = (d.byPlatform || []).map(
-          (p) => `<tr><td>${p.platform}</td><td class="num">${num(p.users)}</td><td class="num">${num(p.chats)}</td><td class="num">${num(p.questions)}</td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="4">No activity yet.</td></tr>';
+          (p) => `<tr><td>${p.platform}</td><td class="num">${num(p.users)}</td><td class="num">${num(p.chats)}</td><td class="num">${num(p.questions)}</td><td class="num">${usd(p.usd)}</td></tr>`
+        ).join('') || '<tr><td class="muted" colspan="5">No activity yet.</td></tr>';
 
         const max = Math.max(1, ...(d.daily || []).map((r) => r.questions));
         $('#daily tbody').innerHTML = (d.daily || []).map(
-          (r) => `<tr><td>${r.day}</td><td class="num">${num(r.questions)}</td><td class="num">${num(r.chats)}</td><td><div class="bar" style="width:${(r.questions / max) * 100}%"></div></td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="4">No activity yet.</td></tr>';
+          (r) => `<tr><td>${r.day}</td><td class="num">${num(r.questions)}</td><td class="num">${num(r.chats)}</td><td class="num">${usd(r.usd)}</td><td><div class="bar" style="width:${(r.questions / max) * 100}%"></div></td></tr>`
+        ).join('') || '<tr><td class="muted" colspan="5">No activity yet.</td></tr>';
 
         $('#installs tbody').innerHTML = (d.installs || []).map(
           (i) => `<tr><td>${(i.team_name || '—')}</td><td class="num">${(i.installed_at || '').slice(0, 10)}</td></tr>`

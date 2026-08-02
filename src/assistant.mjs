@@ -162,7 +162,13 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
         return { text: 'I came up empty on that — try rephrasing?', sources: [] };
       }
 
-      const answer = { text, sources };
+      const answer = {
+        text,
+        sources,
+        usage: { input_tokens: response.usage?.input_tokens || 0, output_tokens: response.usage?.output_tokens || 0 },
+        model: ANSWER_MODEL,
+        searches: sources.length ? 1 : 0,
+      };
       cacheSet(key, answer);
       return answer;
     } catch (err) {

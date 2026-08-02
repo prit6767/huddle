@@ -136,6 +136,17 @@ export function recordCacheHit() {
   ledger.cacheHits += 1;
 }
 
+// Web search bills separately from tokens (~$10 / 1000 by default).
+const SEARCH_PRICE = Number(process.env.HUDDLE_SEARCH_PRICE || 0.01);
+
+/** Estimated USD for a bundle of token/search usage on a given model. */
+export function estimateSpendUsd({ inputTokens = 0, outputTokens = 0, searches = 0, model }) {
+  const m = model || process.env.HUDDLE_ANSWER_MODEL || process.env.HUDDLE_MODEL || ledger.model;
+  const price = PRICES[m] || null;
+  const tokenCost = price ? (inputTokens / 1e6) * price.in + (outputTokens / 1e6) * price.out : 0;
+  return { usd: tokenCost + searches * SEARCH_PRICE, priced: Boolean(price), model: m };
+}
+
 export function usageReport(model) {
   const price = PRICES[model] || PRICES[ledger.model] || null;
   const dollars = price

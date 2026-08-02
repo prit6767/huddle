@@ -88,6 +88,8 @@ export async function answerWithCache(env, { question, context, platform, chatId
   }
 
   const answer = await ask({ question, context, platform, chatId });
+  // A fresh call actually spent money — record it to the durable ledger.
+  if (answer?.usage) await recordSpend(env.DB, chatId, answer.usage, answer.searches || 0);
   if (answer?.text && answer.sources?.length) {
     await env.DB.prepare(
       `INSERT INTO answer_cache (cache_key, answer, expires_at) VALUES (?, ?, ?)
@@ -105,6 +107,23 @@ export async function answerWithCache(env, { question, context, platform, chatId
  * `scope` is the workspace/chat so the same person isn't double-counted across
  * channels they share.
  */
+export async function recordSpend(db, key, usage, searches = 0) {
+  if (!usage) return;
+  const day = today();
+  await db
+    .prepare(
+      `INSERT INTO spend (day, chat_key, input_tokens, output_tokens, searches, calls)
+       VALUES (?, ?, ?, ?, ?, 1)
+       ON CONFLICT(day, chat_key) DO UPDATE SET
+         input_tokens  = input_tokens  + excluded.input_tokens,
+         output_tokens = output_tokens + excluded.output_tokens,
+         searches      = searches      + excluded.searches,
+         calls         = calls + 1`
+    )
+    .bind(day, key, usage.input_tokens || 0, usage.output_tokens || 0, searches)
+    .run();
+}
+
 export async function recordUser(db, platform, scope, userId) {
   if (!userId) return;
   const key =
