@@ -95,6 +95,20 @@ async function displayName(token, userId) {
   return name;
 }
 
+// Slack encodes mentions as <@U123> (or <@U123|handle>). Turn them into
+// readable "@Name" so the model never sees — or echoes back — a raw user id.
+// The bot's own mention is dropped so the question reads as addressed to no one.
+async function resolveMentions(token, text, botUserId) {
+  const ids = [...text.matchAll(/<@([A-Z0-9]+)(?:\|[^>]+)?>/gi)].map((m) => m[1]);
+  if (!ids.length) return text;
+  const names = {};
+  for (const id of new Set(ids)) names[id] = id === botUserId ? '' : `@${await displayName(token, id)}`;
+  return text
+    .replace(/<@([A-Z0-9]+)(?:\|[^>]+)?>/gi, (_, id) => names[id] ?? '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // ------------------------------------------------------------- history backfill
 /**
  * The first time Huddle sees a channel, read the conversation that happened
@@ -110,7 +124,7 @@ async function displayName(token, userId) {
  *    CONTEXT_MESSAGES for context. The full history is still paged so nothing
  *    older is silently missed within the ceiling.
  */
-async function backfillChannel(env, token, channel, key) {
+async function backfillChannel(env, token, channel, key, botUserId) {
   // Exactly once per channel — the PK clash on this marker is the guard.
   if (!(await firstTimeSeeing(env.DB, `backfill:${key}`))) return;
 
@@ -125,7 +139,7 @@ async function backfillChannel(env, token, channel, key) {
       });
       for (const m of res.messages || []) {
         if (m.subtype || m.bot_id || !m.text || !m.user) continue;
-        collected.push({ user: m.user, text: m.text, ts: Number(m.ts) });
+        collected.push({ user: m.user, text: await resolveMentions(token, m.text, botUserId), ts: Number(m.ts) });
       }
       cursor = res.has_more ? res.response_metadata?.next_cursor : null;
     } while (cursor && (BACKFILL_MAX === 0 || collected.length < BACKFILL_MAX));
@@ -195,14 +209,15 @@ async function processEvent(env, body) {
 
   // First time in this channel? Read the history from before Huddle was added,
   // so it's caught up before it ever answers. Runs once per channel.
-  await backfillChannel(env, token, event.channel, key);
+  await backfillChannel(env, token, event.channel, key, install.botUserId);
 
   const name = await displayName(token, event.user);
   const addressed =
     (install.botUserId && text.includes(`<@${install.botUserId}>`)) || event.channel_type === 'im';
 
-  // Record every message for context; only answer when addressed.
-  const cleaned = text.replace(/<@[A-Z0-9]+>/gi, '').trim() || text;
+  // Record every message for context; only answer when addressed. Resolve any
+  // user mentions to @names so neither the context nor the answer shows raw ids.
+  const cleaned = (await resolveMentions(token, text, install.botUserId)) || text;
   if (!addressed) {
     await recordMessage(db, key, name, cleaned);
     return;

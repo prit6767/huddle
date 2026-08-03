@@ -181,6 +181,22 @@ describe('slack worker: answering', () => {
     assert.ok(!posts[0].payload.thread_ts, 'a top-level mention is answered inline, not threaded');
   });
 
+  test('user mentions in a message are stored as @names, never raw ids', async () => {
+    await withInstall();
+    const raw = JSON.stringify({
+      type: 'event_callback',
+      team_id: 'T1',
+      event_id: 'EvMention',
+      event: { type: 'message', channel: 'CM', user: 'U9', text: 'check the list <@U0BDNFXGJ20> shared', ts: '7.0' },
+    });
+    await handleSlack(events(raw), env, ctx, 'https://huddle-hq.com');
+    await settle();
+    restore();
+    const row = await env.DB.prepare('SELECT messages FROM chatlog WHERE chat_key = ?').bind('slack:T1:CM').first();
+    assert.doesNotMatch(row.messages, /U0BDNFXGJ20/, 'raw user id must not leak into context');
+    assert.match(row.messages, /@Ana/, 'the mention is resolved to a display name');
+  });
+
   test('a question asked inside a thread is answered in that same thread', async () => {
     await withInstall();
     const raw = JSON.stringify({
