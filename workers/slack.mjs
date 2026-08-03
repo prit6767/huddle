@@ -212,10 +212,10 @@ async function processEvent(env, body) {
   const context = withBackground(await getBackground(db, key), transcriptOf(await loadContext(db, key)));
   await recordMessage(db, key, name, cleaned);
 
-  // Reply in a thread hung off the triggering message, so a busy channel isn't
-  // flooded with the bot's (sometimes long, sourced) answers. If the question
-  // was already asked inside a thread, stay in that thread.
-  const threadTs = event.thread_ts || event.ts;
+  // Answer inline in the channel — a top-level @mention should get a visible
+  // reply, not one buried behind "1 reply" in a thread. Only when the question
+  // was itself asked inside a thread do we keep the answer in that thread.
+  const threadTs = event.thread_ts;
 
   if (!(await claimQuestion(db, key))) {
     await slackPost(token, 'chat.postMessage', {

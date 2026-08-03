@@ -176,9 +176,9 @@ describe('slack worker: answering', () => {
     assert.equal(posts.length, 1, 'exactly one reply');
     assert.equal(posts[0].payload.channel, 'C1');
     assert.ok(posts[0].payload.text, 'the reply has text');
-    // A top-level @mention is answered in a thread hung off that message,
-    // keeping the channel tidy.
-    assert.equal(posts[0].payload.thread_ts, '1.0', 'answer threads under the question');
+    // A top-level @mention is answered inline in the channel, not buried in a
+    // thread — so thread_ts is not set.
+    assert.ok(!posts[0].payload.thread_ts, 'a top-level mention is answered inline, not threaded');
   });
 
   test('a question asked inside a thread is answered in that same thread', async () => {
