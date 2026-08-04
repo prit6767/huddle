@@ -109,6 +109,26 @@ async function resolveMentions(token, text, botUserId) {
     .trim();
 }
 
+// When a question is asked inside a thread, the flat channel buffer misses the
+// thread's own back-and-forth. Pull the thread so a deep reply has its real
+// parent context (including Huddle's own earlier answers in that thread).
+async function threadContext(token, channel, threadTs, botUserId) {
+  try {
+    const res = await slackPost(token, 'conversations.replies', { channel, ts: threadTs, limit: 30 });
+    const lines = [];
+    for (const m of res.messages || []) {
+      if (m.subtype || !m.text) continue;
+      if (m.user === botUserId) lines.push(`Huddle: ${m.text}`);
+      else if (m.bot_id) continue; // some other app — noise
+      else lines.push(`${await displayName(token, m.user)}: ${await resolveMentions(token, m.text, botUserId)}`);
+    }
+    return lines.join('\n');
+  } catch (err) {
+    console.warn('[slack] thread fetch failed:', err.message);
+    return '';
+  }
+}
+
 // ------------------------------------------------------------- history backfill
 /**
  * The first time Huddle sees a channel, read the conversation that happened
@@ -224,7 +244,12 @@ async function processEvent(env, body) {
   }
 
   await recordUser(db, 'slack', body.team_id, event.user);
-  const context = withBackground(await getBackground(db, key), transcriptOf(await loadContext(db, key)));
+  let context = withBackground(await getBackground(db, key), transcriptOf(await loadContext(db, key)));
+  // If the question is in a thread, fold the thread's own messages in front.
+  if (event.thread_ts) {
+    const t = await threadContext(token, event.channel, event.thread_ts, install.botUserId);
+    if (t) context = `This question is inside a thread. The thread so far:\n${t}\n\n--- other recent channel messages ---\n${context}`;
+  }
   await recordMessage(db, key, name, cleaned);
 
   // Answer inline in the channel — a top-level @mention should get a visible

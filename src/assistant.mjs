@@ -48,6 +48,22 @@ function searchVersionsFor(model) {
 }
 const searchPref = new Map(); // model -> last version that worked
 
+// Hedging that means the answer didn't really settle it — worth a stronger retry.
+const LOW_CONFIDENCE =
+  /\b(i'?m not sure|i am not sure|i do ?n'?t know|not (?:sure|certain)|unable to (?:find|confirm|determine)|could ?n'?t (?:find|confirm)|ca ?n'?t (?:find|confirm)|no (?:reliable |clear )?(?:info|information|data)|hard to say)\b/i;
+
+/** messages.create, resuming a search turn that stops early with pause_turn. */
+async function createWithResume(anthropic, req) {
+  let response = await anthropic.messages.create(req);
+  let messages = [{ role: 'user', content: req.messages[0].content }];
+  let guard = 0;
+  while (response.stop_reason === 'pause_turn' && guard++ < 4) {
+    messages = [...messages, { role: 'assistant', content: response.content }];
+    response = await anthropic.messages.create({ ...req, messages });
+  }
+  return response;
+}
+
 const SYSTEM = `You are a helpful assistant that lives inside a group chat. Several people are talking to each other; you are one participant among them, not a search engine and not a customer service bot.
 
 How to behave here:
@@ -156,18 +172,7 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
   for (let i = startAt; i < versions.length; i++) {
     const version = versions[i];
     try {
-      let response = await anthropic.messages.create(buildRequest(question, context, version, model));
-
-      // A long search turn can stop early with pause_turn; resume it.
-      let messages = [{ role: 'user', content: buildRequest(question, context, version, model).messages[0].content }];
-      let guard = 0;
-      while (response.stop_reason === 'pause_turn' && guard++ < 4) {
-        messages = [...messages, { role: 'assistant', content: response.content }];
-        response = await anthropic.messages.create({
-          ...buildRequest(question, context, version, model),
-          messages,
-        });
-      }
+      const response = await createWithResume(anthropic, buildRequest(question, context, version, model));
 
       if (searchPref.get(model) !== version) {
         searchPref.set(model, version);
@@ -178,20 +183,37 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
         return { text: "I can't help with that one.", sources: [] };
       }
 
-      const { text, sources } = readResponse(response);
-      recordUsage({ model, usage: response.usage, searches: sources.length ? 1 : 0 });
+      const base = readResponse(response);
+      recordUsage({ model, usage: response.usage, searches: base.sources.length ? 1 : 0 });
 
-      if (!text) {
+      // Escalate a weak or empty base-model answer once to the stronger model —
+      // exactly the answers most likely to be wrong get a second, better shot.
+      let best = { ...base, usage: response.usage, model };
+      if (model === BASE_MODEL && HARD_MODEL !== BASE_MODEL && (!base.text || LOW_CONFIDENCE.test(base.text))) {
+        try {
+          const hv = searchVersionsFor(HARD_MODEL)[0];
+          const r2 = await createWithResume(anthropic, buildRequest(question, context, hv, HARD_MODEL));
+          if (r2.stop_reason !== 'refusal') {
+            const up = readResponse(r2);
+            recordUsage({ model: HARD_MODEL, usage: r2.usage, searches: up.sources.length ? 1 : 0 });
+            if (up.text) best = { ...up, usage: r2.usage, model: HARD_MODEL };
+          }
+        } catch (e) {
+          console.warn('[assistant] escalation failed:', e.message); // keep the base answer
+        }
+      }
+
+      if (!best.text) {
         refund(platform, chatId);
         return { text: 'I came up empty on that — try rephrasing?', sources: [] };
       }
 
       const answer = {
-        text,
-        sources,
-        usage: { input_tokens: response.usage?.input_tokens || 0, output_tokens: response.usage?.output_tokens || 0 },
-        model,
-        searches: sources.length ? 1 : 0,
+        text: best.text,
+        sources: best.sources,
+        usage: { input_tokens: best.usage?.input_tokens || 0, output_tokens: best.usage?.output_tokens || 0 },
+        model: best.model,
+        searches: best.sources.length ? 1 : 0,
       };
       cacheSet(key, answer);
       return answer;

@@ -210,6 +210,7 @@ describe('slack worker: answering', () => {
     restore();
     const posts = calls.filter((c) => c.url.includes('chat.postMessage'));
     assert.equal(posts[0].payload.thread_ts, '8.0', 'stays in the existing thread, not the message ts');
+    assert.ok(calls.some((c) => c.url.includes('conversations.replies')), 'the thread is fetched for context');
   });
 
   test('the bot records its OWN reply, so a follow-up has memory of it', async () => {
