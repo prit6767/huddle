@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
-import { answerWithCache } from '../workers/chat-state.mjs';
+import { answerWithCache, normalizeQuestion } from '../workers/chat-state.mjs';
 
 const SCHEMA = readFileSync(new URL('../workers/schema.sql', import.meta.url), 'utf8');
 
@@ -38,7 +38,7 @@ function d1Shim() {
 }
 
 function seed(db, chatId, question, answer, expiresAt) {
-  const key = `${chatId}::${question.toLowerCase().replace(/\s+/g, ' ').trim()}`;
+  const key = `${chatId}::${normalizeQuestion(question)}`;
   db._sql
     .prepare('INSERT INTO answer_cache (cache_key, answer, expires_at) VALUES (?, ?, ?)')
     .run(key, JSON.stringify(answer), expiresAt);

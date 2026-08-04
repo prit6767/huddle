@@ -21,12 +21,32 @@ const MAX_SEARCHES = Number(process.env.HUDDLE_MAX_SEARCHES || 3);
 // Defaults to the global model, so behaviour is unchanged unless you set it.
 const ANSWER_MODEL = process.env.HUDDLE_ANSWER_MODEL || MODEL;
 
-// Start from whatever this model actually supports, then step down if the
-// deployed API disagrees. Picking by model means the common case costs no 400.
-const SEARCH_VERSIONS = [traitsFor(ANSWER_MODEL).searchTool, 'web_search_20250305', null].filter(
-  (v, i, a) => a.indexOf(v) === i
-);
-let searchVersion = SEARCH_VERSIONS[0];
+// Model routing: most group-chat questions (math, definitions, a score) are
+// handled well and cheaply by the base model; reasoning-heavy ones (compare,
+// why, should-we, trade-offs) get a stronger model. This RAISES quality where
+// it matters while keeping the average cost near the cheap model, since the
+// hard path is the minority. Set HUDDLE_HARD_MODEL to the base model to disable.
+const BASE_MODEL = ANSWER_MODEL;
+const HARD_MODEL = process.env.HUDDLE_HARD_MODEL || 'claude-sonnet-5';
+const HARD_RE =
+  /\b(why|how come|compare|comparison|versus|vs\.?|explain|analy[sz]e|pros and cons|worth it|should (?:i|we|they)|which is better|who is better|whats better|difference between|trade[- ]?offs?|reasons?|justif)/i;
+
+export function pickModel(question) {
+  const q = String(question || '').trim();
+  if (HARD_MODEL === BASE_MODEL) return BASE_MODEL;
+  if (HARD_RE.test(q)) return HARD_MODEL;
+  if (q.length > 180) return HARD_MODEL; // long / multi-part asks
+  if ((q.match(/[.?!]/g) || []).length >= 3) return HARD_MODEL; // several clauses
+  return BASE_MODEL;
+}
+
+// Search-tool version per model, with a remembered preference so a rejected
+// version isn't re-tried on every call. Starts from what the model supports,
+// then steps down if the deployed API disagrees.
+function searchVersionsFor(model) {
+  return [traitsFor(model).searchTool, 'web_search_20250305', null].filter((v, i, a) => a.indexOf(v) === i);
+}
+const searchPref = new Map(); // model -> last version that worked
 
 const SYSTEM = `You are a helpful assistant that lives inside a group chat. Several people are talking to each other; you are one participant among them, not a search engine and not a customer service bot.
 
@@ -43,13 +63,13 @@ How to behave here:
 - No preamble. Do not open with "Great question" or restate what was asked. Lead with the answer.
 - Match the register of the room. These are friends talking, not a business meeting.`;
 
-function buildRequest(question, context, version) {
+function buildRequest(question, context, version, model = ANSWER_MODEL) {
   const userContent = context
     ? `Recent messages in this group chat:\n\n${context}\n\n---\n\nSomeone is now asking you directly:\n${question}`
     : question;
 
   return {
-    model: ANSWER_MODEL,
+    model,
     max_tokens: 1200, // a chat reply; the prompt already demands brevity
     // The system prompt is identical on every question, and context is resent
     // each time — so mark the static prefix cacheable. On this workload (many
@@ -58,10 +78,10 @@ function buildRequest(question, context, version) {
     // unsupported rather than an error.
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
     // Haiku-tier models reject output_config.effort outright.
-    ...(traitsFor(ANSWER_MODEL).supportsEffort ? { output_config: { effort: EFFORT } } : {}),
+    ...(traitsFor(model).supportsEffort ? { output_config: { effort: EFFORT } } : {}),
     messages: [{ role: 'user', content: userContent }],
     ...(version
-      ? { tools: [{ type: version, name: 'web_search', max_uses: MAX_SEARCHES }] }
+      ? { tools: [{ type: version, name: 'web_search', max_uses: model === HARD_MODEL ? Math.max(MAX_SEARCHES, 5) : MAX_SEARCHES }] }
       : {}),
   };
 }
@@ -128,25 +148,29 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
   const allowance = claim(platform, chatId);
   if (!allowance.allowed) return { text: allowance.reason, sources: [] };
 
-  for (let i = SEARCH_VERSIONS.indexOf(searchVersion); i < SEARCH_VERSIONS.length; i++) {
-    const version = SEARCH_VERSIONS[i];
+  // Route to the right model for this question's difficulty.
+  const model = pickModel(question);
+  const versions = searchVersionsFor(model);
+  const startAt = Math.max(0, versions.indexOf(searchPref.get(model) ?? versions[0]));
+
+  for (let i = startAt; i < versions.length; i++) {
+    const version = versions[i];
     try {
-      let response = await anthropic.messages.create(buildRequest(question, context, version));
+      let response = await anthropic.messages.create(buildRequest(question, context, version, model));
 
       // A long search turn can stop early with pause_turn; resume it.
-      let messages = [{ role: 'user', content: buildRequest(question, context, version).messages[0].content }];
+      let messages = [{ role: 'user', content: buildRequest(question, context, version, model).messages[0].content }];
       let guard = 0;
       while (response.stop_reason === 'pause_turn' && guard++ < 4) {
         messages = [...messages, { role: 'assistant', content: response.content }];
         response = await anthropic.messages.create({
-          ...buildRequest(question, context, version),
+          ...buildRequest(question, context, version, model),
           messages,
         });
       }
 
-      if (version !== searchVersion) {
-        console.warn(`[assistant] web search: ${searchVersion} -> ${version}`);
-        searchVersion = version;
+      if (searchPref.get(model) !== version) {
+        searchPref.set(model, version);
       }
 
       if (response.stop_reason === 'refusal') {
@@ -155,7 +179,7 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
       }
 
       const { text, sources } = readResponse(response);
-      recordUsage({ model: ANSWER_MODEL, usage: response.usage, searches: sources.length ? 1 : 0 });
+      recordUsage({ model, usage: response.usage, searches: sources.length ? 1 : 0 });
 
       if (!text) {
         refund(platform, chatId);
@@ -166,7 +190,7 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
         text,
         sources,
         usage: { input_tokens: response.usage?.input_tokens || 0, output_tokens: response.usage?.output_tokens || 0 },
-        model: ANSWER_MODEL,
+        model,
         searches: sources.length ? 1 : 0,
       };
       cacheSet(key, answer);
@@ -174,7 +198,7 @@ export async function ask({ question, context, platform = 'unknown', chatId = 'u
     } catch (err) {
       // A 400 here usually means this API vintage doesn't know that tool
       // version. Step down; the last entry drops search entirely.
-      if (err instanceof Anthropic.BadRequestError && i < SEARCH_VERSIONS.length - 1) {
+      if (err instanceof Anthropic.BadRequestError && i < versions.length - 1) {
         console.warn(`[assistant] "${version}" rejected (${err.message}) — trying next`);
         continue;
       }

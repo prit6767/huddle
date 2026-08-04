@@ -20,7 +20,9 @@ export function isSummarizeCommand(text) {
 /** The one-line hello every adapter sends when it first lands in a chat. */
 export const WELCOME =
   "Hi, I'm Huddle. @mention me with a question and I'll search the web and answer with sources — handy for settling a debate. I only reply when you address me.";
-const CACHE_TTL_MS = Number(process.env.HUDDLE_CACHE_TTL_MS || 10 * 60 * 1000);
+// Most repeat questions ("what's the score", "capital of X") recur over hours,
+// not minutes — a longer TTL turns far more of them into free cache hits.
+const CACHE_TTL_MS = Number(process.env.HUDDLE_CACHE_TTL_MS || 60 * 60 * 1000);
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -63,7 +65,26 @@ export async function claimQuestion(db, key, limit = PER_CHAT_DAILY) {
   return (row?.used ?? 1) <= limit;
 }
 
-const cacheKeyOf = (chatId, question) => `${chatId}::${question.toLowerCase().replace(/\s+/g, ' ').trim()}`;
+/**
+ * Normalize a question so trivially-different phrasings share a cache entry:
+ * lowercase, expand a few common contractions, drop punctuation, collapse
+ * whitespace. Conservative on purpose — it must not merge genuinely different
+ * questions (the answer is cached per chat and reused verbatim).
+ */
+export function normalizeQuestion(question) {
+  return String(question || '')
+    .toLowerCase()
+    .replace(/\bwhat'?s\b/g, 'what is')
+    .replace(/\bwho'?s\b/g, 'who is')
+    .replace(/\bwhere'?s\b/g, 'where is')
+    .replace(/\bhow'?s\b/g, 'how is')
+    .replace(/\bwhen'?s\b/g, 'when is')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ') // strip punctuation/emoji
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const cacheKeyOf = (chatId, question) => `${chatId}::${normalizeQuestion(question)}`;
 
 /**
  * ask(), wrapped in a durable D1 cache. The same question in the same chat,
