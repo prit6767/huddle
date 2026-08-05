@@ -395,6 +395,10 @@ html[data-boot] .bootlog {
   height: 30px;
   border-radius: 8px;
   display: block;
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.brand:hover .brand-logo {
+  transform: rotate(-6deg) scale(1.06);
 }
 .topnav {
   display: flex;
@@ -1397,14 +1401,35 @@ select:focus {
   border-color: color-mix(in srgb, var(--coral) 45%, var(--hairline));
 }
 .feature-icon {
-  width: 48px;
-  height: 48px;
-  display: grid;
+  display: inline-grid;
   place-items: center;
-  border-radius: 14px;
-  background: var(--coral-soft);
-  font-size: 24px;
   margin-bottom: var(--s3);
+}
+.feature-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: block;
+  box-shadow: 0 6px 18px -6px rgba(240, 96, 62, 0.5);
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+/* engagement: the logo lifts + tips when you hover its card */
+.feature:hover .feature-logo {
+  transform: translateY(-2px) scale(1.08) rotate(-4deg);
+}
+/* small inline logo for the chat bubble byline + admin headings */
+.inline-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  vertical-align: -4px;
+  margin-right: 2px;
+}
+.bootlog-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  vertical-align: -4px;
 }
 #platforms .feature::before {
   content: '';
@@ -1416,8 +1441,6 @@ select:focus {
 #platforms .feature:nth-child(1) { --accent: #611f69; } /* Slack aubergine */
 #platforms .feature:nth-child(2) { --accent: var(--coral); }
 #platforms .feature:nth-child(3) { --accent: #2e6fb0; }
-#platforms .feature:nth-child(1) .feature-icon { background: color-mix(in srgb, #611f69 20%, transparent); }
-#platforms .feature:nth-child(3) .feature-icon { background: color-mix(in srgb, #2e6fb0 20%, transparent); }
 
 /* --- Slack channel mockup: show the product actually working --- */
 .slackmock {
@@ -1447,7 +1470,10 @@ select:focus {
   display: grid; place-items: center;
   color: #fff; font-weight: 800; font-size: 15px;
 }
-.sm-av.huddle { background: var(--coral); }
+.sm-av.huddle {
+  background: #fff url('/icon.png') center/cover no-repeat;
+  font-size: 0; /* hide any residual text */
+}
 .sm-body { line-height: 1.5; }
 .sm-body .sm-name { font-weight: 800; }
 .sm-body .sm-app {
