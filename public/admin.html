@@ -6,162 +6,397 @@
     <meta name="robots" content="noindex" />
     <title>Huddle — Admin</title>
     <link rel="icon" type="image/png" href="/icon.png" />
-    <link rel="stylesheet" href="/styles.css" />
+    <!-- Fully self-contained on purpose: the admin console must never break
+         because the marketing site's stylesheet changed or is cached. All
+         styling, theming, and behaviour live here. -->
     <style>
-      .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
-      h1 { font-size: 26px; margin: 0 0 4px; }
-      .sub { color: var(--ink-muted); margin: 0 0 28px; }
-      .gate { max-width: 380px; margin: 80px auto; text-align: center; }
+      :root {
+        --bg: #17130f;
+        --panel: #221c17;
+        --panel-2: #2b241e;
+        --line: #3a322b;
+        --ink: #f4efe8;
+        --muted: #b3a99d;
+        --faint: #8a7f73;
+        --coral: #ff7554;
+        --coral-press: #e85f3f;
+        --good: #4fb87b;
+        --link: #7ab0e8;
+        --r: 16px;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--link); }
+      .wrap { max-width: 1040px; margin: 0 auto; padding: 24px 20px 90px; }
+
+      /* ---- top bar ---- */
+      .top {
+        display: flex; align-items: center; gap: 12px;
+        position: sticky; top: 0; z-index: 5;
+        padding: 14px 0; margin-bottom: 8px;
+        background: linear-gradient(var(--bg) 78%, transparent);
+      }
+      .logo { width: 30px; height: 30px; border-radius: 8px; display: block; flex: none; }
+      .title { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+      .spacer { flex: 1; }
+      .stamp { color: var(--faint); font-size: 12.5px; }
+      .btn {
+        font: inherit; font-size: 13px; font-weight: 600;
+        padding: 8px 12px; border-radius: 10px; cursor: pointer;
+        border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+      }
+      .btn:hover { border-color: var(--faint); }
+      .btn.ghost { background: transparent; color: var(--muted); }
+      .btn[disabled] { opacity: 0.5; cursor: default; }
+
+      /* ---- gate ---- */
+      .gate { max-width: 360px; margin: 12vh auto 0; text-align: center; }
+      .gate .logo { width: 46px; height: 46px; border-radius: 12px; margin: 0 auto 14px; }
+      .gate h1 { font-size: 22px; margin: 0 0 4px; }
+      .gate p { color: var(--muted); margin: 0 0 18px; }
       .gate input {
-        width: 100%; padding: 12px 14px; margin: 12px 0;
-        border: 1px solid var(--hairline); border-radius: 12px;
-        background: var(--surface); color: var(--ink); font: inherit;
+        width: 100%; padding: 12px 14px; margin: 8px 0;
+        border: 1px solid var(--line); border-radius: 12px;
+        background: var(--panel); color: var(--ink); font: inherit;
       }
-      .gate button {
-        padding: 12px 20px; border: 0; border-radius: 12px;
-        background: var(--coral); color: #fff; font-weight: 700; cursor: pointer;
-      }
-      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 32px; }
-      .card {
-        background: var(--surface); border: 1px solid var(--hairline);
-        border-radius: 16px; padding: 18px;
-      }
-      .card .n { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
-      .card .l { color: var(--ink-muted); font-size: 13px; margin-top: 4px; }
-      h2 { font-size: 16px; margin: 28px 0 10px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--hairline); font-size: 14px; }
-      th { color: var(--ink-faint); font-weight: 600; }
+      .gate input:focus { outline: none; border-color: var(--coral); }
+      .gate .btn.primary { width: 100%; margin-top: 8px; padding: 12px; background: var(--coral); border-color: var(--coral); color: #fff; font-weight: 700; }
+      .err { color: #ff9b82; font-size: 13.5px; min-height: 1.2em; margin: 10px 0 0; }
+
+      /* ---- sections ---- */
+      h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); margin: 30px 0 12px; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; }
+      .card .n { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+      .card .n.accent { color: var(--coral); }
+      .card .n.good { color: var(--good); }
+      .card .l { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+      .panel .scroll { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; min-width: 460px; }
+      th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 13.5px; white-space: nowrap; }
+      tr:last-child td { border-bottom: 0; }
+      th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
       td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-      .bar { height: 8px; background: var(--coral); border-radius: 4px; min-width: 2px; }
-      .muted { color: var(--ink-muted); }
-      .err { color: var(--coral-press); }
-      .refresh { float: right; font-size: 13px; cursor: pointer; color: var(--link); }
+      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); font-size: 12px; font-weight: 600; text-transform: capitalize; }
+      .muted { color: var(--muted); }
+
+      /* ---- daily chart ---- */
+      .chart { padding: 16px 18px; }
+      .chart svg { width: 100%; height: 150px; display: block; }
+      .chart .cap { display: flex; gap: 16px; color: var(--faint); font-size: 12px; margin-top: 8px; }
+      .chart .cap b { color: var(--muted); font-weight: 600; }
+      .bar rect { transition: opacity 0.15s; }
+      .bar:hover rect { opacity: 0.75; }
+
+      /* ---- states ---- */
+      .banner { display: none; align-items: center; gap: 10px; background: #3a231c; border: 1px solid #6b3a2c; color: #ffcbbb; border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: 13.5px; }
+      .banner.show { display: flex; }
+      .skeleton { }
+      .skel { background: linear-gradient(90deg, var(--panel) 25%, var(--panel-2) 37%, var(--panel) 63%); background-size: 400% 100%; animation: sh 1.3s ease infinite; border-radius: var(--r); }
+      @keyframes sh { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+      .spin { width: 15px; height: 15px; border: 2px solid var(--line); border-top-color: var(--coral); border-radius: 50%; animation: rot 0.7s linear infinite; display: inline-block; vertical-align: -2px; }
+      @keyframes rot { to { transform: rotate(360deg); } }
+      .foot { color: var(--faint); font-size: 12.5px; margin-top: 30px; line-height: 1.6; max-width: 62ch; }
+      [hidden] { display: none !important; }
     </style>
   </head>
   <body>
     <div class="wrap">
+      <!-- ============================ GATE ============================ -->
       <div id="gate" class="gate" hidden>
-        <h1><img src="/icon.png" alt="" class="inline-logo" /> Huddle Admin</h1>
-        <p class="muted">Sign in.</p>
-        <input id="user" type="text" placeholder="username" autocomplete="username" />
-        <input id="pass" type="password" placeholder="password" autocomplete="current-password" />
-        <div><button id="go">Sign in</button></div>
-        <p id="gerr" class="err" hidden></p>
+        <img class="logo" src="/icon.png" alt="" />
+        <h1>Huddle Admin</h1>
+        <p>Sign in to view your analytics.</p>
+        <input id="user" type="text" placeholder="Username" autocomplete="username" />
+        <input id="pass" type="password" placeholder="Password" autocomplete="current-password" />
+        <button id="go" class="btn primary">Sign in</button>
+        <p id="gerr" class="err"></p>
       </div>
 
+      <!-- ============================ DASH ============================ -->
       <div id="dash" hidden>
-        <span class="refresh" id="refresh">↻ refresh</span>
-        <h1><img src="/icon.png" alt="" class="inline-logo" /> Huddle Admin</h1>
-        <p class="sub" id="asof"></p>
+        <div class="top">
+          <img class="logo" src="/icon.png" alt="" />
+          <span class="title">Huddle Admin</span>
+          <span class="spacer"></span>
+          <span class="stamp" id="stamp"></span>
+          <button class="btn" id="refresh">↻ Refresh</button>
+          <button class="btn ghost" id="signout">Sign out</button>
+        </div>
 
-        <div class="cards" id="cards"></div>
+        <div class="banner" id="banner"><span id="banner-msg"></span></div>
 
-        <h2>Retention</h2>
-        <div class="cards" id="retention"></div>
-
-        <h2>By platform</h2>
-        <table id="platforms"><thead><tr><th>Platform</th><th class="num">Users</th><th class="num">Active chats</th><th class="num">Questions</th><th class="num">Est. spend</th></tr></thead><tbody></tbody></table>
-
-        <h2>Busiest chats</h2>
-        <table id="topchats"><thead><tr><th>Platform</th><th class="num">Questions</th><th class="num">Active days</th></tr></thead><tbody></tbody></table>
-
-        <h2>Questions per day (last 14)</h2>
-        <table id="daily"><thead><tr><th>Day</th><th class="num">Questions</th><th class="num">Chats</th><th class="num">New users</th><th class="num">Est. spend</th><th style="width:25%"></th></tr></thead><tbody></tbody></table>
-
-        <h2>Slack workspaces</h2>
-        <table id="installs"><thead><tr><th>Workspace</th><th class="num">Installed</th></tr></thead><tbody></tbody></table>
-
-        <p class="muted" style="margin-top:28px;font-size:13px">
-          "Users" counts distinct people who have actually talked to the bot — stored
-          only as a one-way hash of their ID, never a name, raw ID, or message. Someone
-          who uses it on two platforms counts once per platform. Message context stays
-          bounded and disposable; these are the only per-person numbers kept.
-        </p>
+        <div id="content"></div>
       </div>
     </div>
 
     <script>
+      'use strict';
       const $ = (s) => document.querySelector(s);
       const KEY = 'huddle:admin:auth'; // base64(user:pass), session-scoped
-      const num = (n) => (n ?? 0).toLocaleString();
-      const usd = (n) => '$' + (n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const REFRESH_MS = 60_000;
 
+      // ---- formatters (all null-safe) ----
+      const n = (v) => Number(v ?? 0).toLocaleString();
+      const usd = (v) => '$' + Number(v ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const pct = (v) => Number(v ?? 0) + '%';
+      const esc = (s) =>
+        String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+      let timer = null;
+      let lastData = null;
+
+      // ---- gate ----
       function showGate(msg) {
-        $('#gate').hidden = false;
+        clearInterval(timer);
         $('#dash').hidden = true;
-        if (msg) { $('#gerr').textContent = msg; $('#gerr').hidden = false; }
-      }
-
-      async function load(basic) {
-        try {
-          const res = await fetch('/api/admin/stats', { headers: { authorization: 'Basic ' + basic } });
-          if (res.status === 401) { sessionStorage.removeItem(KEY); return showGate('Wrong username or password.'); }
-          if (res.status === 404) return showGate('Admin isn’t enabled (set HUDDLE_ADMIN_USER and HUDDLE_ADMIN_PASS).');
-          if (!res.ok) return showGate('Error ' + res.status);
-          const d = await res.json();
-          sessionStorage.setItem(KEY, basic);
-          render(d);
-        } catch (e) { showGate(e.message); }
+        $('#gate').hidden = false;
+        $('#gerr').textContent = msg || '';
+        $('#user').focus();
       }
 
       function signIn() {
         const u = $('#user').value.trim();
         const p = $('#pass').value;
-        if (!u || !p) return showGate('Enter a username and password.');
-        load(btoa(u + ':' + p));
+        if (!u || !p) return ($('#gerr').textContent = 'Enter a username and password.');
+        $('#gerr').textContent = '';
+        load(btoa(u + ':' + p), true);
+      }
+
+      function signOut() {
+        sessionStorage.removeItem(KEY);
+        showGate('');
+      }
+
+      function banner(msg) {
+        const b = $('#banner');
+        if (!msg) return b.classList.remove('show');
+        $('#banner-msg').innerHTML = msg;
+        b.classList.add('show');
+      }
+
+      // ---- data ----
+      async function load(basic, fromGate) {
+        if (!basic) return showGate('');
+        setRefreshing(true);
+        try {
+          const res = await fetch('/api/admin/stats', { headers: { authorization: 'Basic ' + basic } });
+          if (res.status === 401) {
+            sessionStorage.removeItem(KEY);
+            return showGate(fromGate ? 'Wrong username or password.' : 'Session expired — sign in again.');
+          }
+          if (res.status === 404)
+            return showGate('Admin isn’t enabled. Set HUDDLE_ADMIN_USER and HUDDLE_ADMIN_PASS as Worker secrets.');
+          if (!res.ok) throw new Error('Server returned ' + res.status);
+
+          const d = await res.json();
+          sessionStorage.setItem(KEY, basic);
+          lastData = d;
+          $('#gate').hidden = true;
+          $('#dash').hidden = false;
+          banner('');
+          render(d);
+          startAutoRefresh(basic);
+        } catch (e) {
+          // Transient/network error: keep whatever we have, show a banner + retry.
+          if (lastData) banner('Couldn’t refresh (' + esc(e.message) + '). Showing last data. <a href="#" id="retry">Retry</a>');
+          else showGate('Couldn’t reach the server: ' + e.message);
+          const r = $('#retry');
+          if (r) r.onclick = (ev) => { ev.preventDefault(); load(basic); };
+        } finally {
+          setRefreshing(false);
+        }
+      }
+
+      function setRefreshing(on) {
+        const b = $('#refresh');
+        b.disabled = on;
+        b.innerHTML = on ? '<span class="spin"></span> Refreshing' : '↻ Refresh';
+      }
+
+      function startAutoRefresh(basic) {
+        clearInterval(timer);
+        timer = setInterval(() => {
+          if (!document.hidden) load(basic);
+        }, REFRESH_MS);
+      }
+
+      // keep the "as of" stamp live
+      setInterval(() => {
+        if (lastData && !$('#dash').hidden) $('#stamp').textContent = 'Updated ' + ago(lastData.generatedAt);
+      }, 1000);
+      function ago(iso) {
+        const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+        if (s < 60) return s + 's ago';
+        if (s < 3600) return Math.round(s / 60) + 'm ago';
+        return Math.round(s / 3600) + 'h ago';
+      }
+
+      // ---- render ----
+      function card(value, label, cls) {
+        return `<div class="card"><div class="n ${cls || ''}">${value}</div><div class="l">${esc(label)}</div></div>`;
+      }
+      function rowsOrEmpty(html, cols, msg) {
+        return html || `<tr><td class="muted" colspan="${cols}">${msg}</td></tr>`;
       }
 
       function render(d) {
-        $('#gate').hidden = true;
-        $('#dash').hidden = false;
-        $('#asof').textContent = 'As of ' + new Date(d.generatedAt).toLocaleString();
-        const t = d.totals;
-        $('#cards').innerHTML = [
-          [num(t.users), 'Users (all-time)'],
-          [usd(t.spendTodayUsd), 'Est. spend today'],
-          [usd(t.spendUsd), 'Est. spend all-time'],
-          [num(t.todayQuestions), 'Questions today'],
-          [num(t.totalQuestions), 'Questions all-time'],
-          [num(t.activeChats), 'Active chats'],
-          [num(t.avgQuestionsPerChat), 'Avg questions / chat'],
-          [num(t.cacheHitRate) + '%', 'Cache hit rate'],
-          [num(t.workspaces), 'Slack workspaces'],
-        ].map(([n, l]) => `<div class="card"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
-
+        const t = d.totals || {};
         const r = d.retention || {};
-        $('#retention').innerHTML = [
-          [r.users7d, 'Users · 7d'],
-          [r.users30d, 'Users · 30d'],
-          [r.activeChats7d, 'Active chats · 7d'],
-          [r.activeChats30d, 'Active chats · 30d'],
-          [r.returningChats, 'Returning chats (2+ days)'],
-        ].map(([n, l]) => `<div class="card"><div class="n">${num(n)}</div><div class="l">${l}</div></div>`).join('');
+        $('#stamp').textContent = 'Updated ' + ago(d.generatedAt);
 
-        $('#topchats tbody').innerHTML = (d.topChats || []).map(
-          (c) => `<tr><td>${c.platform}</td><td class="num">${num(c.questions)}</td><td class="num">${num(c.activeDays)}</td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="3">No activity yet.</td></tr>';
+        const kpis =
+          card(n(t.users), 'Users (all-time)', 'accent') +
+          card(usd(t.spendTodayUsd), 'Est. spend today') +
+          card(usd(t.spendUsd), 'Est. spend all-time') +
+          card(n(t.todayQuestions), 'Questions today') +
+          card(n(t.totalQuestions), 'Questions all-time') +
+          card(n(t.activeChats), 'Active chats') +
+          card(n(t.avgQuestionsPerChat), 'Avg questions / chat') +
+          card(pct(t.cacheHitRate), 'Cache hit rate', 'good') +
+          card(n(t.workspaces), 'Slack workspaces');
 
-        $('#platforms tbody').innerHTML = (d.byPlatform || []).map(
-          (p) => `<tr><td>${p.platform}</td><td class="num">${num(p.users)}</td><td class="num">${num(p.chats)}</td><td class="num">${num(p.questions)}</td><td class="num">${usd(p.usd)}</td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="5">No activity yet.</td></tr>';
+        const ret =
+          card(n(r.users7d), 'Users · 7d') +
+          card(n(r.users30d), 'Users · 30d') +
+          card(n(r.activeChats7d), 'Active chats · 7d') +
+          card(n(r.activeChats30d), 'Active chats · 30d') +
+          card(n(r.returningChats), 'Returning chats (2+ days)');
 
-        const max = Math.max(1, ...(d.daily || []).map((r) => r.questions));
-        $('#daily tbody').innerHTML = (d.daily || []).map(
-          (r) => `<tr><td>${r.day}</td><td class="num">${num(r.questions)}</td><td class="num">${num(r.chats)}</td><td class="num">${num(r.newUsers)}</td><td class="num">${usd(r.usd)}</td><td><div class="bar" style="width:${(r.questions / max) * 100}%"></div></td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="6">No activity yet.</td></tr>';
+        const platforms = rowsOrEmpty(
+          (d.byPlatform || [])
+            .map(
+              (p) =>
+                `<tr><td><span class="pill">${esc(p.platform)}</span></td><td class="num">${n(p.users)}</td><td class="num">${n(
+                  p.chats
+                )}</td><td class="num">${n(p.questions)}</td><td class="num">${usd(p.usd)}</td></tr>`
+            )
+            .join(''),
+          5,
+          'No activity yet.'
+        );
 
-        $('#installs tbody').innerHTML = (d.installs || []).map(
-          (i) => `<tr><td>${(i.team_name || '—')}</td><td class="num">${(i.installed_at || '').slice(0, 10)}</td></tr>`
-        ).join('') || '<tr><td class="muted" colspan="2">No Slack installs yet.</td></tr>';
+        const topchats = rowsOrEmpty(
+          (d.topChats || [])
+            .map(
+              (c) =>
+                `<tr><td><span class="pill">${esc(c.platform)}</span></td><td class="num">${n(c.questions)}</td><td class="num">${n(
+                  c.activeDays
+                )}</td></tr>`
+            )
+            .join(''),
+          3,
+          'No activity yet.'
+        );
+
+        const installs = rowsOrEmpty(
+          (d.installs || [])
+            .map((i) => `<tr><td>${esc(i.team_name || '—')}</td><td class="num">${esc((i.installed_at || '').slice(0, 10))}</td></tr>`)
+            .join(''),
+          2,
+          'No Slack installs yet.'
+        );
+
+        $('#content').innerHTML = `
+          <h2>Overview</h2>
+          <div class="cards">${kpis}</div>
+
+          <h2>Retention</h2>
+          <div class="cards">${ret}</div>
+
+          <h2>Activity — last 14 days</h2>
+          <div class="panel chart">${chart(d.daily || [])}</div>
+
+          <h2>By platform</h2>
+          <div class="panel"><div class="scroll"><table>
+            <thead><tr><th>Platform</th><th class="num">Users</th><th class="num">Active chats</th><th class="num">Questions</th><th class="num">Est. spend</th></tr></thead>
+            <tbody>${platforms}</tbody></table></div></div>
+
+          <h2>Busiest chats</h2>
+          <div class="panel"><div class="scroll"><table>
+            <thead><tr><th>Platform</th><th class="num">Questions</th><th class="num">Active days</th></tr></thead>
+            <tbody>${topchats}</tbody></table></div></div>
+
+          <h2>Daily detail</h2>
+          <div class="panel"><div class="scroll"><table>
+            <thead><tr><th>Day</th><th class="num">Questions</th><th class="num">Chats</th><th class="num">New users</th><th class="num">Est. spend</th></tr></thead>
+            <tbody>${rowsOrEmpty(
+              (d.daily || [])
+                .map(
+                  (x) =>
+                    `<tr><td>${esc(x.day)}</td><td class="num">${n(x.questions)}</td><td class="num">${n(x.chats)}</td><td class="num">${n(
+                      x.newUsers
+                    )}</td><td class="num">${usd(x.usd)}</td></tr>`
+                )
+                .join(''),
+              5,
+              'No activity yet.'
+            )}</tbody></table></div></div>
+
+          <h2>Slack workspaces</h2>
+          <div class="panel"><div class="scroll"><table>
+            <thead><tr><th>Workspace</th><th class="num">Installed</th></tr></thead>
+            <tbody>${installs}</tbody></table></div></div>
+
+          <p class="foot">
+            "Users" counts distinct people who have talked to the bot — stored only as a one-way
+            hash of their ID, never a name, raw ID, or message. Someone who uses it on two platforms
+            counts once per platform. Spend is an estimate from token usage at published model rates.
+            Auto-refreshes every minute.
+          </p>`;
       }
 
+      // Inline-SVG bar chart of daily questions (chronological), spend as a line.
+      function chart(daily) {
+        const days = [...daily].reverse(); // API is newest-first
+        if (!days.length) return '<p class="muted">No activity yet.</p>';
+        const W = 720, H = 150, pad = 6;
+        const bw = (W - pad * 2) / days.length;
+        const maxQ = Math.max(1, ...days.map((d) => d.questions || 0));
+        const maxS = Math.max(0.01, ...days.map((d) => Number(d.usd) || 0));
+        const bars = days
+          .map((d, i) => {
+            const h = ((d.questions || 0) / maxQ) * (H - 30);
+            const x = pad + i * bw;
+            return `<g class="bar"><title>${esc(d.day)}: ${n(d.questions)} questions, ${usd(d.usd)}</title>
+              <rect x="${x + 2}" y="${H - 18 - h}" width="${Math.max(1, bw - 4)}" height="${h}" rx="3" fill="var(--coral)"></rect></g>`;
+          })
+          .join('');
+        // spend polyline
+        const pts = days
+          .map((d, i) => `${(pad + i * bw + bw / 2).toFixed(1)},${(H - 18 - ((Number(d.usd) || 0) / maxS) * (H - 30)).toFixed(1)}`)
+          .join(' ');
+        const labels = `<text x="${pad}" y="${H - 3}" fill="var(--faint)" font-size="10">${esc(days[0].day)}</text>
+          <text x="${W - pad}" y="${H - 3}" fill="var(--faint)" font-size="10" text-anchor="end">${esc(days[days.length - 1].day)}</text>`;
+        return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Daily questions and spend">
+            ${bars}
+            <polyline points="${pts}" fill="none" stroke="var(--good)" stroke-width="2" stroke-linejoin="round" opacity="0.9"></polyline>
+            ${labels}
+          </svg>
+          <div class="cap"><span><b style="color:var(--coral)">▮</b> questions / day</span><span><b style="color:var(--good)">—</b> est. spend / day</span></div>`;
+      }
+
+      // ---- wire up ----
       $('#go').addEventListener('click', signIn);
       $('#pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') signIn(); });
+      $('#user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#pass').focus(); });
       $('#refresh').addEventListener('click', () => load(sessionStorage.getItem(KEY)));
+      $('#signout').addEventListener('click', signOut);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && lastData && !$('#dash').hidden) load(sessionStorage.getItem(KEY));
+      });
 
       const saved = sessionStorage.getItem(KEY);
-      if (saved) load(saved); else showGate();
+      if (saved) load(saved);
+      else showGate('');
     </script>
   </body>
 </html>
