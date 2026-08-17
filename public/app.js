@@ -83,6 +83,89 @@ function termLine(target, text, hot = false) {
   els.forEach((el) => io.observe(el));
 })();
 
+// Living hero demo: the argument plays out, then Huddle's answer STREAMS in and
+// the loop repeats. Without JS or under reduced motion the bubbles just sit in
+// their final state (see CSS), so nothing is lost. Pauses while off-screen or
+// on a hidden tab, so it isn't burning cycles when nobody's looking.
+(function heroDemo() {
+  const body = document.querySelector('.hero .phone-body');
+  if (!body || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const all = [...body.querySelectorAll('.msg')];
+  const typing = body.querySelector('.msg.typing');
+  const bot = body.querySelector('.msg.bot:not(.typing)');
+  const botText = bot && bot.querySelector('.bot-text');
+  const srcs = bot && bot.querySelector('.srcs');
+  if (!typing || !bot || !botText) return;
+  const answer = botText.textContent.replace(/\s+/g, ' ').trim();
+  const asks = all.filter((m) => m !== typing && m !== bot); // the 3 them + the ask
+
+  let alive = true;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sleepWhileHidden = async () => {
+    while (document.hidden) await wait(400);
+  };
+  function show(el) {
+    el.style.display = el === typing ? 'flex' : '';
+    el.classList.remove('pop');
+    void el.offsetWidth; // restart the entrance animation
+    el.classList.add('pop');
+  }
+  function hideAll() {
+    all.forEach((m) => (m.style.display = 'none'));
+    botText.textContent = '';
+    if (srcs) srcs.style.visibility = 'hidden';
+  }
+
+  async function type(text) {
+    botText.classList.add('streaming');
+    // stream word-by-word — reads like a model writing, not a teletype
+    const words = text.split(' ');
+    let out = '';
+    for (let i = 0; i < words.length && alive; i++) {
+      out += (i ? ' ' : '') + words[i];
+      botText.textContent = out;
+      await wait(38 + Math.random() * 34);
+    }
+    botText.classList.remove('streaming');
+  }
+
+  async function loop() {
+    while (alive) {
+      hideAll();
+      await sleepWhileHidden();
+      for (const m of asks) {
+        show(m);
+        await wait(m.classList.contains('me') ? 780 : 950);
+      }
+      show(typing);
+      await wait(1250);
+      typing.style.display = 'none';
+      show(bot);
+      botText.textContent = '';
+      await type(answer);
+      if (srcs) {
+        srcs.style.visibility = 'visible';
+        srcs.classList.add('pop');
+      }
+      await wait(4200);
+    }
+  }
+
+  // Only run while the hero is actually on screen.
+  hideAll();
+  let started = false;
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting && !started) {
+        started = true;
+        loop();
+      }
+    }
+  });
+  io.observe(body);
+})();
+
 // ---------------------------------------------------------------- transport
 async function api(path) {
   const res = await fetch(path);

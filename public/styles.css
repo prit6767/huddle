@@ -47,11 +47,19 @@
   --s5: 24px;
   --s6: 32px;
   --s7: 48px;
+  --s8: 72px;
+  --s9: 112px; /* section rhythm — premium sites breathe */
 
-  /* ---- elevation: one soft shadow, never harsh ---- */
-  --shadow: 0 2px 8px rgba(42, 38, 34, 0.06);
+  /* ---- type ---- */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 
-  --maxw: 1120px;
+  /* ---- elevation: a layered shadow system, warm-tinted ---- */
+  --shadow-sm: 0 1px 2px rgba(42, 38, 34, 0.05), 0 2px 6px rgba(42, 38, 34, 0.05);
+  --shadow: 0 4px 10px rgba(42, 38, 34, 0.06), 0 12px 28px -12px rgba(42, 38, 34, 0.12);
+  --shadow-lg: 0 8px 20px rgba(42, 38, 34, 0.08), 0 40px 70px -28px rgba(42, 38, 34, 0.22);
+
+  --maxw: 1080px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -78,7 +86,9 @@
     --friction-soft: #372c1a;
     --link: #7ab0e8;
 
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.22);
+    --shadow: 0 4px 10px rgba(0, 0, 0, 0.28), 0 14px 30px -12px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.35), 0 44px 80px -28px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -97,11 +107,24 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: Nunito, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 500;
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Material: a whisper of film grain over everything, so flat fills read as
+   paper/surface rather than plastic. Fixed, non-interactive, very low opacity. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ---------------------------------------------------------------- type */
@@ -109,22 +132,22 @@ h1,
 h2,
 h3 {
   margin: 0 0 var(--s3);
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
 }
 h1 {
-  font-size: 30px;
-  line-height: 36px;
-  font-weight: 800;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.04;
 }
 h2 {
-  font-size: 20px;
-  line-height: 26px;
-  font-weight: 700;
+  font-size: clamp(24px, 3.2vw, 34px);
 }
 h3 {
-  font-size: 20px;
-  line-height: 26px;
-  font-weight: 700;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 p {
   margin: 0 0 var(--s3);
@@ -381,9 +404,10 @@ html[data-boot] .bootlog {
   display: inline-flex;
   align-items: center;
   gap: var(--s2);
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--ink);
   text-decoration: none;
 }
@@ -518,45 +542,58 @@ select:focus {
 .hero {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
-  gap: clamp(var(--s5), 5vw, var(--s7));
+  gap: clamp(var(--s6), 6vw, var(--s8));
   align-items: center;
-  padding: clamp(var(--s6), 7vw, 72px) 0 var(--s7);
+  padding: clamp(var(--s7), 9vw, 108px) 0 clamp(var(--s7), 8vw, var(--s8));
 }
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;
-    gap: var(--s6);
+    gap: var(--s7);
   }
 }
 .eyebrow {
-  display: inline-block;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 12px;
   line-height: 18px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--coral);
   background: var(--coral-soft);
+  border: 1px solid color-mix(in srgb, var(--coral) 22%, transparent);
   border-radius: var(--r-chip);
-  padding: var(--s1) var(--s3);
-  margin-bottom: var(--s4);
+  padding: var(--s2) var(--s4);
+  margin-bottom: var(--s5);
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--coral) 80%, transparent);
 }
 .hero h1 {
-  font-size: clamp(30px, 5.5vw, 52px);
-  line-height: 1.1;
-  font-weight: 800;
-  margin-bottom: var(--s4);
+  font-size: clamp(38px, 6vw, 66px);
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin-bottom: var(--s5);
 }
 .hero h1 em {
-  font-style: normal;
+  font-style: italic;
+  font-weight: 500;
   color: var(--coral);
 }
 .lede {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: clamp(17px, 1.5vw, 19px);
+  line-height: 1.6;
   color: var(--ink-muted);
   max-width: 34rem;
-  margin-bottom: var(--s5);
+  margin-bottom: var(--s6);
 }
 .cta-row {
   display: flex;
@@ -576,8 +613,8 @@ select:focus {
 .phone {
   background: var(--surface);
   border: 1px solid var(--hairline);
-  border-radius: var(--r-card);
-  box-shadow: var(--shadow);
+  border-radius: calc(var(--r-card) + 6px);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 .phone-bar {
@@ -652,34 +689,36 @@ select:focus {
   margin-right: var(--s2);
 }
 
-/* ------------------------------------------- hero demo: play it once
-   The argument types itself out on load: three messages, the ask, a
-   typing pause, then the bot's answer. Pure CSS — the global
-   prefers-reduced-motion block above kills all of it, which leaves every
-   bubble visible in its final state. */
-.hero .phone-body .msg {
-  animation: msg-in 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-}
-.hero .phone-body .msg:nth-child(1) { animation-delay: 0.4s; }
-.hero .phone-body .msg:nth-child(2) { animation-delay: 1.5s; }
-.hero .phone-body .msg:nth-child(3) { animation-delay: 2.6s; }
-.hero .phone-body .msg:nth-child(4) { animation-delay: 3.7s; }
-/* typing indicator: appears after the ask, leaves as the answer lands */
+/* ------------------------------------------- hero demo (JS-driven loop)
+   app.js plays the conversation: three messages, the ask, a typing pause,
+   then the answer STREAMS in token by token, sources land, and it loops.
+   Without JS (or under reduced motion) every bubble is simply visible in its
+   final state — the typing indicator stays hidden so there's no frozen
+   ellipsis. Each bubble gets `.pop` from JS as it enters. */
 .hero .phone-body .msg.typing {
-  animation: msg-in 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 4.5s both,
-    msg-out 200ms ease-in 6.3s forwards;
-  display: flex;
+  display: none; /* JS reveals it during the demo only */
   gap: 5px;
   align-items: center;
   padding: var(--s3) var(--s4);
 }
-.hero .phone-body .msg:nth-child(6) { animation-delay: 6.5s; }
+.hero .phone-body .msg.pop {
+  animation: msg-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+/* streaming caret while the answer types */
+.bot-text.streaming::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -2px;
+  background: var(--coral);
+  animation: caret 0.9s step-end infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
 @keyframes msg-in {
   from { opacity: 0; transform: translateY(10px) scale(0.97); }
   to { opacity: 1; transform: none; }
-}
-@keyframes msg-out {
-  to { opacity: 0; height: 0; padding-top: 0; padding-bottom: 0; margin: 0; overflow: hidden; }
 }
 .tdot {
   width: 7px;
@@ -705,19 +744,21 @@ select:focus {
 
 /* ================================================================= bands */
 .band {
-  padding: var(--s7) 0;
+  padding: clamp(var(--s7), 8vw, var(--s9)) 0;
   border-top: 1px solid var(--hairline);
 }
 .band-title {
-  font-size: 30px;
-  line-height: 36px;
-  font-weight: 800;
-  margin-bottom: var(--s2);
+  font-size: clamp(26px, 3.4vw, 38px);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--s3);
 }
 .band-sub {
   color: var(--ink-muted);
-  max-width: 42rem;
-  margin-bottom: var(--s5);
+  font-size: clamp(16px, 1.4vw, 18px);
+  max-width: 44rem;
+  margin-bottom: var(--s6);
 }
 .band-foot {
   margin-top: var(--s5);
@@ -1365,19 +1406,21 @@ select:focus {
   content: '';
   position: absolute;
   z-index: -1;
-  top: -10%;
-  right: -8%;
-  width: 62%;
-  height: 95%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--coral) 12%, transparent), transparent 72%);
-  filter: blur(26px);
+  top: -18%;
+  right: -14%;
+  width: 78%;
+  height: 118%;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--coral) 20%, transparent), transparent 70%),
+    radial-gradient(closest-side at 30% 80%, color-mix(in srgb, var(--friction) 12%, transparent), transparent 68%);
+  filter: blur(40px);
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 /* --- lift the chat demo off the page and let it breathe --- */
 .hero .phone {
-  box-shadow: 0 28px 64px -22px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-lg);
   animation: cardFloat 7s ease-in-out infinite;
 }
 @keyframes cardFloat {
@@ -1385,19 +1428,26 @@ select:focus {
   50% { transform: translateY(-9px); }
 }
 
-/* --- scroll reveal: sections rise into view --- */
-.reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+/* --- scroll reveal: sections rise into view, cards in a gentle stagger --- */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.75s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.75s cubic-bezier(0.2, 0.7, 0.2, 1); }
 .reveal.in { opacity: 1; transform: none; }
+.reveal.in .feature-grid .feature { animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.reveal.in .feature-grid .feature:nth-child(2) { animation-delay: 0.08s; }
+.reveal.in .feature-grid .feature:nth-child(3) { animation-delay: 0.16s; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
 
 /* --- feature / platform cards: tactile, with a brand accent bar --- */
 .feature {
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
 }
 .feature:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 44px -20px rgba(0, 0, 0, 0.42);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
   border-color: color-mix(in srgb, var(--coral) 45%, var(--hairline));
 }
 .feature-icon {
@@ -1509,10 +1559,10 @@ select:focus {
   }
 }
 
-/* --- gradient accent on the hero headline emphasis --- */
+/* --- the emphasis word: Fraunces italic in coral — an editorial, premium beat --- */
 .hero h1 em {
-  /* plain coral — a gradient-clipped headline is a generic "AI landing page" tell */
-  font-style: normal;
+  font-style: italic;
+  font-weight: 500;
   color: var(--coral);
 }
 
