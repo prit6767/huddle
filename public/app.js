@@ -189,6 +189,20 @@ function escapeHtml(value) {
  * hidden — better than a button that goes nowhere.
  */
 function renderInvites(invites) {
+  // Point the Telegram step's button at the real bot link when configured;
+  // otherwise leave the numbered steps to do the explaining and drop the button.
+  const tg = $('#tg-cta');
+  if (tg) {
+    if (invites?.telegram) {
+      tg.href = invites.telegram;
+      tg.target = '_blank';
+      tg.rel = 'noopener noreferrer';
+      tg.textContent = 'Open the bot in Telegram';
+    } else {
+      tg.remove();
+    }
+  }
+
   const block = $('#quickadd');
   if (!block) return;
   const links = [

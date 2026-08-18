@@ -782,6 +782,65 @@ select:focus {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   gap: var(--s4);
 }
+
+/* ---- connect: simple, numbered per-platform steps under #add ---- */
+.connect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--s4);
+  margin-top: var(--s5);
+}
+.connect {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  padding: var(--s5);
+  box-shadow: var(--shadow-sm);
+}
+.connect header {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+}
+.connect header h3 {
+  margin: 0;
+  flex: 1;
+}
+.connect .clogo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.connect .mins {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--computed);
+  background: var(--computed-soft);
+  padding: 3px 9px;
+  border-radius: var(--r-chip);
+  white-space: nowrap;
+}
+.connect ol {
+  margin: 0 0 var(--s5);
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+.connect ol li { padding-left: 2px; }
+.connect ol li::marker {
+  color: var(--coral);
+  font-weight: 800;
+}
+.connect .card-cta {
+  margin-top: auto;
+  align-self: flex-start;
+}
 .feature,
 .platform {
   background: var(--surface);

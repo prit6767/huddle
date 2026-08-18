@@ -88,31 +88,30 @@
             <p class="fineprint">Free to use · one-click on Slack</p>
           </div>
 
-          <!-- Chat demo: the argument it was built to end -->
-          <div class="phone" aria-label="Example group chat conversation">
+          <!-- Chat demo: settling a work debate with sources, in seconds -->
+          <div class="phone" aria-label="Example team chat conversation">
             <div class="phone-bar">
               <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-              <span class="phone-title">The Lads</span>
+              <span class="phone-title"># growth-team</span>
             </div>
             <div class="phone-body">
               <div class="msg them">
-                <span class="who">Michael</span>ronaldo is clearly the goat
+                <span class="who">Priya · Marketing</span>Northwind just raised again — did you see?
               </div>
               <div class="msg them">
-                <span class="who">Sam</span>are you serious 😭 &nbsp;messi has more ballon d'ors
+                <span class="who">Dev · Sales</span>yeah I think it was around $40M?
               </div>
               <div class="msg them">
-                <span class="who">Michael</span>ronaldo has more international goals tho
+                <span class="who">Priya · Marketing</span>pretty sure it was bigger than that
               </div>
-              <div class="msg me"><span class="mention">@Huddle</span> who actually has more career goals?</div>
+              <div class="msg me"><span class="mention">@Huddle</span> how much did Northwind raise in their latest round?</div>
               <div class="msg bot typing" aria-hidden="true">
                 <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
               </div>
               <div class="msg bot">
                 <span class="who bot-who"><img src="/icon.png" alt="" class="inline-logo" /> Huddle</span>
-                <span class="bot-text">Ronaldo leads on career goals; Messi leads on Ballon d'Ors and assists.
-                "Better" is preference — the numbers aren't.</span>
-                <span class="srcs"><span>espn.com</span><span>fifa.com</span></span>
+                <span class="bot-text">Northwind closed a $120M Series C in June 2026, led by Atlas Ventures — well above the $40M figure.</span>
+                <span class="srcs"><span>techcrunch.com</span><span>crunchbase.com</span></span>
               </div>
             </div>
           </div>
@@ -235,27 +234,67 @@
         <section class="band reveal" id="add">
           <h2 class="band-title">Add it to your chat</h2>
           <p class="band-sub">
-            One click and it's in your workspace — no terminal, no tokens, nothing to install.
+            Pick your platform — each takes under a minute. No terminal, no tokens, nothing to install.
           </p>
 
-          <!-- ---- Path A: hosted bot. Shown only when this instance actually
-               publishes invite links, so the button can never go nowhere. ---- -->
+          <!-- Hosted one-click buttons appear here when this instance publishes
+               invite links (app.js fills them from /api/health). -->
           <div class="quickadd" id="quickadd" hidden>
             <div class="quickadd-head">
-              <span class="quickadd-badge">No setup</span>
+              <span class="quickadd-badge">Fastest</span>
               <h3>One click, and it's in</h3>
-              <p class="muted">
-                This instance is already running. Click below, approve on the permission screen,
-                and it's in your channel. Then @mention it to settle a debate and it answers with
-                sources.
-              </p>
+              <p class="muted">This instance is already running — pick a platform below and approve on the permission screen.</p>
             </div>
             <div class="quickadd-actions" id="quickadd-actions"></div>
-            <p class="quickadd-note muted">
-              It reads the channel for context but only replies when you @mention it — never chatty.
-            </p>
           </div>
 
+          <div class="connect-grid">
+            <article class="connect">
+              <header>
+                <img src="/icon.png" alt="" class="clogo" />
+                <h3>Slack</h3>
+                <span class="mins">~30 sec</span>
+              </header>
+              <ol>
+                <li>Click <b>Add to Slack</b> and approve the permissions.</li>
+                <li>In any channel, type <code>/invite @Huddle</code>.</li>
+                <li><b>@mention</b> it with a question — it replies with sources.</li>
+              </ol>
+              <a class="btn primary card-cta" href="/slack/install">Add to Slack</a>
+            </article>
+
+            <article class="connect">
+              <header>
+                <img src="/icon.png" alt="" class="clogo" />
+                <h3>Telegram</h3>
+                <span class="mins">~1 min</span>
+              </header>
+              <ol>
+                <li>Open the Huddle bot in Telegram.</li>
+                <li>Tap <b>Add to Group</b> and choose your group.</li>
+                <li>Reply to it or start a message with <b>@Huddle</b>.</li>
+              </ol>
+              <a class="btn ghost card-cta" id="tg-cta" href="#add">Get the bot link</a>
+            </article>
+
+            <article class="connect">
+              <header>
+                <img src="/icon.png" alt="" class="clogo" />
+                <h3>Google Chat</h3>
+                <span class="mins">~1 min</span>
+              </header>
+              <ol>
+                <li>In Google Chat, click <b>＋ New chat → Find apps</b>.</li>
+                <li>Search <b>Huddle</b> and add it to a space.</li>
+                <li><b>@mention</b> it with a question.</li>
+              </ol>
+            </article>
+          </div>
+
+          <p class="quickadd-note muted" style="margin-top: var(--s5)">
+            Whichever you pick: Huddle reads the channel for context but only replies when you
+            <b>@mention</b> it — never chatty, and every answer carries its sources.
+          </p>
         </section>
 
       </section>
