@@ -662,6 +662,13 @@ select:focus {
   color: #fff;
   border-bottom-right-radius: var(--s1);
 }
+/* an @mention, the way a chat client highlights it */
+.mention {
+  background: rgba(255, 255, 255, 0.22);
+  padding: 0 5px;
+  border-radius: 5px;
+  font-weight: 700;
+}
 /* The bot's own voice: coral rail on the leading edge, no shadow. It looks
    like a considerate guest in someone else's chat, never a banner. */
 .msg.bot {
