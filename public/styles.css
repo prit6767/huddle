@@ -617,6 +617,12 @@ select:focus {
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
+.hero .phone {
+  /* The demo grows message-by-message; its frame must not. */
+  height: clamp(490px, 44vw, 560px);
+  display: flex;
+  flex-direction: column;
+}
 .phone-bar {
   display: flex;
   align-items: center;
@@ -635,6 +641,13 @@ select:focus {
   flex-direction: column;
   gap: var(--s2);
   padding: var(--s4);
+}
+.hero .phone-body {
+  /* Keep the conversation inside the fixed frame, filling from the top down. */
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  justify-content: flex-start;
 }
 .msg {
   max-width: 86%;
