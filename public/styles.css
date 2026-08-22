@@ -619,7 +619,7 @@ select:focus {
 }
 .hero .phone {
   /* The demo grows message-by-message; its frame must not. */
-  height: clamp(490px, 44vw, 560px);
+  height: 540px;
   display: flex;
   flex-direction: column;
 }
